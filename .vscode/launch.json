@@ -1,14 +1,26 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
             "type": "java",
-            "name": "Spring Boot-AdminServiceApplication<com.jigubangbang-user-service>",
+            "name": "admin-service", // 대시보드에 표시될 이름입니다. 간단하게 변경.
             "request": "launch",
-            "cwd": "${workspaceFolder}",
             "mainClass": "com.jigubangbang.admin_service.AdminServiceApplication",
-            "projectName": "com.jigubangbang-user-service",
-            "args": "",
-            "envFile": "${workspaceFolder}/.env"
+            "projectName": "admin-service" // pom.xml과 일치하는 이름
+        },
+        {
+            "type": "java",
+            "name": "user-service", // 대시보드에 표시될 이름
+            "request": "launch",
+            "mainClass": "com.jigubangbang.user_service.UserServiceApplication",
+            "projectName": "user-service" // pom.xml과 일치하는 이름
+        },
+        {
+            "type": "java",
+            "name": "payment-service", // 대시보드에 표시될 이름
+            "request": "launch",
+            "mainClass": "com.jigubangbang.payment_service.PaymentServiceApplication",
+            "projectName": "payment-service" // pom.xml과 일치하는 이름
         }
     ]
 }
