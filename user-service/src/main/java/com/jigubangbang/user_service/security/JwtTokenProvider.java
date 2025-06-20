@@ -35,8 +35,7 @@ public class JwtTokenProvider {
         this.accessTokenValidityMs = accessTokenValidityMsConfig;
         this.refreshTokenValidityMs = refreshTokenValidityMsConfig;
 
-        logger.info("JWT Initialized: HS512 / Access Exp: {}ms / Refresh Exp: {}ms",
-                    accessTokenValidityMs, refreshTokenValidityMs);
+        logger.info("JWT Initialized: HS512 / Access Exp: {}ms / Refresh Exp: {}ms", accessTokenValidityMs, refreshTokenValidityMs);
     }
 
     // Access Token 생성
