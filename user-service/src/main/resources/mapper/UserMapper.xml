@@ -10,7 +10,7 @@
             user_id AS id,
             password,
             role,
-            status
+            user_status AS status
         FROM user
         WHERE user_id = #{userId}
     </select>
