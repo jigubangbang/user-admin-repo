@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.jigubangbang.payment_service.model.User;
+import com.jigubangbang.payment_service.model.UserDto;
 import com.jigubangbang.payment_service.user_service.UserServiceClient;
 import reactor.core.publisher.Mono;
 
@@ -24,7 +24,7 @@ public class PaymentController {
     }
     
     @GetMapping("/{userId}")
-    public User getOrderUserInfo(@PathVariable String userId) {
+    public UserDto getOrderUserInfo(@PathVariable String userId) {
         return userServiceClient.getUser( userId );
     }
     
