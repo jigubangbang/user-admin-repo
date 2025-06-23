@@ -24,4 +24,41 @@
         FROM user
         WHERE user_id = #{userId}
     </select>
+
+    <!-- 회원가입 -->
+    <insert id="insertUser" parameterType="com.jigubangbang.user_service.model.RegisterRequestDto">
+        INSERT INTO user (
+            user_id,
+            password,
+            name,
+            nickname,
+            email,
+            tel,
+            agreed_required,
+            agreed_optional
+        ) VALUES (
+            #{userId},
+            #{password},
+            #{name},
+            #{nickname},
+            #{email},
+            #{tel},
+            #{agreedRequired},
+            #{agreedOptional}
+        )
+    </insert>
+
+    <!-- 아이디 중복 확인 -->
+    <select id="existsByUserId" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM user WHERE user_id = #{userId}
+        )
+    </select>
+
+    <!-- 이메일 중복 확인 -->
+    <select id="existsByEmail" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM user WHERE email = #{email}
+        )
+    </select>
 </mapper>

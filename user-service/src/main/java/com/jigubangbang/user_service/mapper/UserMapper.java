@@ -1,6 +1,7 @@
 package com.jigubangbang.user_service.mapper;
 
 import com.jigubangbang.user_service.model.AuthDto;
+import com.jigubangbang.user_service.model.RegisterRequestDto;
 import com.jigubangbang.user_service.model.UserDto;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -12,4 +13,13 @@ public interface UserMapper {
 
     // 일반 사용자 정보 조회
     UserDto findUserById(String userId);
+
+    // 회원가입
+    void insertUser(RegisterRequestDto dto);
+
+    // 아이디 중복 체크
+    boolean existsByUserId(String userId);
+
+    // 이메일 중복 체크
+    boolean existsByEmail(String email);
 }
