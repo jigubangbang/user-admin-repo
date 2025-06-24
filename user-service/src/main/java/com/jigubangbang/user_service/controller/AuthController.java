@@ -1,6 +1,6 @@
 package com.jigubangbang.user_service.controller;
 
-import com.jigubangbang.user_service.model.EmailRequestDto;
+import com.jigubangbang.user_service.model.EmailDto;
 import com.jigubangbang.user_service.model.LoginRequestDto;
 import com.jigubangbang.user_service.model.LoginResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
@@ -45,13 +45,13 @@ public class AuthController {
     }
 
     @PostMapping("/email/send")
-    public ResponseEntity<String> sendEmailCode(@RequestBody EmailRequestDto request) {
+    public ResponseEntity<String> sendEmailCode(@RequestBody EmailDto request) {
         emailService.sendVerificationCode(request.getEmail());
         return ResponseEntity.ok("인증 코드가 이메일로 전송되었습니다.");
     }
 
     @PostMapping("/email/verify")
-    public ResponseEntity<String> verifyEmailCode(@RequestBody EmailRequestDto request) {
+    public ResponseEntity<String> verifyEmailCode(@RequestBody EmailDto request) {
         boolean verified = emailService.verifyCode(request.getEmail(), request.getCode());
         if (verified) {
             return ResponseEntity.ok("이메일 인증에 성공했습니다.");

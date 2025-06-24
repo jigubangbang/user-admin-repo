@@ -8,7 +8,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 import java.util.Random;
 
 @Service
@@ -24,7 +24,7 @@ public class EmailService {
     // 이메일 인증 코드 전송 (유효시간 3분)
     public void sendVerificationCode(String email) {
         String code = generateCode();
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(3);
+        Timestamp expiresAt = new Timestamp(System.currentTimeMillis() + 3 * 60 * 1000); 
 
         EmailDto dto = new EmailDto();
         dto.setEmail(email);
@@ -53,9 +53,12 @@ public class EmailService {
     // 인증 코드 검증
     public boolean verifyCode(String email, String code) {
         EmailDto saved = emailMapper.findByEmail(email);
-        if (saved == null || saved.getCode() == null) return false;
+        
+        if (saved == null || saved.getCode() == null || saved.getExpiresAt() == null) {
+            return false;
+        }
 
-        if (saved.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (saved.getExpiresAt().before(new Timestamp(System.currentTimeMillis()))) {
             return false;
         }
 

@@ -1,6 +1,6 @@
 package com.jigubangbang.user_service.model;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -10,5 +10,6 @@ import lombok.Setter;
 public class EmailDto {
     private String email;
     private String code;
-    private LocalDateTime expiresAt;
+    private Timestamp expiresAt;
+    private Boolean isVerified; 
 }
