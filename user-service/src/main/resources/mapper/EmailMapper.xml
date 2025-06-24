@@ -16,7 +16,7 @@
   </insert>
 
   <!-- 이메일로 인증 정보 조회 -->
-  <select id="findByEmail" resultType="com.jigubangbang.user_service.model.EmailVeriDto">
+  <select id="findByEmail" resultType="com.jigubangbang.user_service.model.EmailDto">
     SELECT email, code, is_verified
     FROM email_veri
     WHERE email = #{email}
