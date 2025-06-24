@@ -1,9 +1,11 @@
 package com.jigubangbang.user_service.controller;
 
+import com.jigubangbang.user_service.model.EmailRequestDto;
 import com.jigubangbang.user_service.model.LoginRequestDto;
 import com.jigubangbang.user_service.model.LoginResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
 import com.jigubangbang.user_service.service.AuthService;
+import com.jigubangbang.user_service.service.EmailService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailService emailService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto request) {
@@ -39,6 +42,22 @@ public class AuthController {
     public ResponseEntity<Boolean> checkEmail(@PathVariable String email) {
         boolean isDuplicate = authService.isEmailDuplicate(email);
         return ResponseEntity.ok(isDuplicate);
+    }
+
+    @PostMapping("/email/send")
+    public ResponseEntity<String> sendEmailCode(@RequestBody EmailRequestDto request) {
+        emailService.sendVerificationCode(request.getEmail());
+        return ResponseEntity.ok("인증 코드가 이메일로 전송되었습니다.");
+    }
+
+    @PostMapping("/email/verify")
+    public ResponseEntity<String> verifyEmailCode(@RequestBody EmailRequestDto request) {
+        boolean verified = emailService.verifyCode(request.getEmail(), request.getCode());
+        if (verified) {
+            return ResponseEntity.ok("이메일 인증에 성공했습니다.");
+        } else {
+            return ResponseEntity.badRequest().body("유효하지 않거나 만료된 인증코드입니다.");
+        }
     }
 }
 
