@@ -31,16 +31,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    // deployAWS 브랜치에 대한 푸시가 아니면 파이프라인 중단 (젠킨스 웹훅 필터링)
-                    if ("${env.BRANCH_NAME}" != "deployAWS") {
-                        echo "Skipping pipeline for branch: ${env.BRANCH_NAME}. Only 'deployAWS' branch triggers full pipeline."
-                        currentBuild.result = 'NOT_BUILT' // 빌드를 건너뛰고 'NOT_BUILT' 상태로 표시
-                        error "Push not on 'deployAWS' branch. Exiting." // 파이프라인 중단
-                    }
-                }
-                // deployAWS 브랜치 체크아웃
-                // credentialsId는 Jenkins에 등록된 GitHub PAT Credential ID여야 합니다.
-                // 이 레포지토리의 크리덴셜 ID를 사용하세요 (예: 'github-user-admin-repo-pat')
+
                 git branch: 'deployAWS', credentialsId: 'github-user-admin-repo-pat', url: 'https://github.com/jigubangbang/user-admin-repo.git'
             }
         }
