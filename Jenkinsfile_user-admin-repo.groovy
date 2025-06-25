@@ -23,18 +23,18 @@ pipeline {
     }
 
     // GitHub 웹훅 트리거 (deployAWS 브랜치에 푸시 시)
-    // Removed: githubPush() trigger to allow builds from any branch or manual triggers.
+    triggers {
+        githubPush()
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    // Removed: Branch filtering logic. The pipeline will now proceed regardless of the branch.
-                    echo "Checking out branch: ${env.BRANCH_NAME}" // Inform which branch is being checked out
-                }
-                // Check out the current branch that triggered the build, or 'main' as a fallback if not triggered by a branch push
+
+                // deployAWS 브랜치 체크아웃
                 // credentialsId는 Jenkins에 등록된 GitHub PAT Credential ID여야 합니다.
                 // 이 레포지토리의 크리덴셜 ID를 사용하세요 (예: 'github-user-admin-repo-pat')
-                git branch: "${env.BRANCH_NAME ?: 'main'}", credentialsId: 'github-user-admin-repo-pat', url: 'https://github.com/jigubangbang/user-admin-repo.git'
+                git branch: 'deployAWS', credentialsId: 'github-user-admin-repo-pat', url: 'https://github.com/jigubangbang/user-admin-repo.git'
             }
         }
 
