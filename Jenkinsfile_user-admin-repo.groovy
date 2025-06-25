@@ -24,7 +24,6 @@ pipeline {
 
     // GitHub 웹훅 트리거 (deployAWS 브랜치에 푸시 시)
     // Removed: githubPush() trigger to allow builds from any branch or manual triggers.
-
     stages {
         stage('Checkout') {
             steps {
