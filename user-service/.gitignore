@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### 민감 설정파일 ###
+src/main/resources/application.properties
+src/main/resources/application.yml
+.env
