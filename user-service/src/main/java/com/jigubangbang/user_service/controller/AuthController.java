@@ -4,6 +4,7 @@ import com.jigubangbang.user_service.model.EmailDto;
 import com.jigubangbang.user_service.model.LoginRequestDto;
 import com.jigubangbang.user_service.model.LoginResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
+import com.jigubangbang.user_service.model.SocialRequestDto;
 import com.jigubangbang.user_service.service.AuthService;
 import com.jigubangbang.user_service.service.EmailService;
 
@@ -58,6 +59,14 @@ public class AuthController {
         } else {
             return ResponseEntity.badRequest().body("유효하지 않거나 만료된 인증코드입니다.");
         }
+    }
+    
+    @PostMapping("/{provider}")
+    public ResponseEntity<LoginResponseDto> socialLogin(
+            @PathVariable String provider,
+            @RequestBody SocialRequestDto request) {
+        LoginResponseDto response = authService.socialLogin(request.getCode(), provider);
+        return ResponseEntity.ok(response);
     }
 }
 

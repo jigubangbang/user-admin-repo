@@ -22,4 +22,7 @@ public interface UserMapper {
 
     // 이메일 중복 체크
     boolean existsByEmail(String email);
+
+    // 이메일로 사용자 조회 (소셜 로그인용)
+    UserDto findByEmail(String email);
 }

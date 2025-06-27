@@ -61,4 +61,14 @@
             SELECT 1 FROM user WHERE email = #{email}
         )
     </select>
+
+    <!-- 이메일로 사용자 조회 (소셜 로그인용) -->
+    <select id="findByEmail" resultType="com.jigubangbang.user_service.model.UserDto">
+        SELECT
+            user_id AS id,
+            name,
+            role
+        FROM user
+        WHERE email = #{email}
+    </select>
 </mapper>
