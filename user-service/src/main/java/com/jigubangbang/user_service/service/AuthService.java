@@ -118,9 +118,4 @@ public class AuthService {
     private String generateRandomUserId() {
         return "user" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
-
-    public void logout(String userId) {
-        // 최소 구현
-        System.out.println("사용자 로그아웃 요청됨: " + userId);
-    }
 }
