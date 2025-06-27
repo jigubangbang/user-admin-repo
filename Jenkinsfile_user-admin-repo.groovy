@@ -9,11 +9,11 @@ pipeline {
     environment {
         // AWS 계정 및 리전 정보
         AWS_REGION = 'ap-northeast-2'
-        AWS_ACCOUNT_ID = '947625948810' // 실제 AWS 계정 ID로 변경 필수
+        AWS_ACCOUNT_ID = '947625948810'
 
         // EKS 클러스터 정보
-        EKS_CLUSTER_NAME = 'msa-eks-cluster' // 실제 EKS 클러스터 이름으로 변경 필수
-        EKS_KUBECTL_ROLE_ARN = "arn:aws:iam::${AWS_ACCOUNT_ID}:role/JenkinsEKSDeployerRole" // 실제 IAM Role ARN으로 변경 필수
+        EKS_CLUSTER_NAME = 'msa-eks-cluster'
+        EKS_KUBECTL_ROLE_ARN = "arn:aws:iam::${AWS_ACCOUNT_ID}:role/JenkinsEKSDeployerRole"
 
         // Docker 이미지 태그 (Jenkins 빌드 번호 사용)
         IMAGE_TAG = "${env.BUILD_NUMBER}"
@@ -30,9 +30,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // deployAWS 브랜치 체크아웃
-                // credentialsId는 Jenkins에 등록된 GitHub PAT Credential ID여야 합니다.
-                // 이 레포지토리의 크리덴셜 ID를 사용하세요 (예: 'github-user-admin-repo-pat')
                 git branch: 'deployAWS', credentialsId: 'github-user-admin-repo-pat', url: 'https://github.com/jigubangbang/user-admin-repo.git'
             }
         }
@@ -40,8 +37,6 @@ pipeline {
         stage('Set AWS Kubeconfig') {
             steps {
                 script {
-                    // EKS 클러스터 접근을 위한 kubeconfig 설정
-                    // 'aws-cicd-credentials'는 Jenkins에 등록된 AWS IAM 사용자/역할 Credential ID여야 합니다.
                     withCredentials([aws(credentialsId: 'aws-cicd-credentials')]) {
                         sh "aws eks update-kubeconfig --name ${env.EKS_CLUSTER_NAME} --region ${env.AWS_REGION} --kubeconfig ${env.KUBECONFIG_PATH} --role-arn ${env.EKS_KUBECTL_ROLE_ARN}"
                     }
@@ -52,8 +47,6 @@ pipeline {
         stage('Deploy User-Admin-Repo Bundle') {
             steps {
                 script {
-                    // 번들 서비스는 Config Server와 Eureka Server가 준비될 때까지 기다림
-                    // 이전에 infra-platform Jenkinsfile에서 배포했으므로 여기서는 대기만 합니다.
                     retry(3) { // 불안정한 네트워크 상황 대비 재시도
                         sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl wait --for=condition=available deployment/config-server-deployment -n default --timeout=600s || exit 1"
                     }
@@ -75,12 +68,10 @@ pipeline {
                     }
                     echo "Eureka Server is ready. Proceeding with user-admin-repo bundle."
 
-                    def ecrRepoName = 'msa-user-admin-repo' // ECR 레포지토리 이름 (번들용)
+                    def ecrRepoName = 'msa-user-admin-repo'
                     def fullEcrRepoUrl = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ecrRepoName}"
 
                     echo "--- Building and Deploying user-admin-repo bundle ---"
-                    // user-admin-repo의 루트 디렉토리에서 Dockerfile이 존재하므로 dir() 필요 없음
-                    // Docker 이미지 빌드 (FORCE_FULL_DEPLOY 시 --no-cache)
                     def dockerImage = docker.build("${fullEcrRepoUrl}:${env.IMAGE_TAG}", "${params.FORCE_FULL_DEPLOY ? '--no-cache' : ''} .")
 
                     // ECR 로그인 및 이미지 푸시
@@ -97,8 +88,6 @@ pipeline {
                     echo "--- 기존 배포 삭제 완료 (존재했다면) ---"
                     // --- 기존 배포 강제 삭제 끝 ---
 
-                    // Kubernetes Deployment/Service YAML 업데이트 및 적용
-                    // k8s YAML 파일들은 user-admin-repo/k8s/ 디렉토리에 있다고 가정
                     sh """
                         KUBECONFIG=${env.KUBECONFIG_PATH} sed -i "s|__ECR_IMAGE_FULL_PATH__|${fullEcrRepoUrl}:${env.IMAGE_TAG}|g" k8s/deployment.yaml
                         KUBECONFIG=${env.KUBECONFIG_PATH} kubectl apply -f k8s/deployment.yaml -n default
@@ -108,8 +97,6 @@ pipeline {
                     // --- Kubernetes Deployment Debugging (user-admin-repo 파드 관련) ---
                     echo "--- Kubernetes Deployment Debugging (user-admin-repo 파드 관련) ---"
                     echo "배포 상태 확인 전 파드 목록:"
-                    // 'app' 레이블은 k8s/deployment.yaml의 spec.selector.matchLabels에 있는 값을 사용해야 합니다.
-                    // 예시: app=user-admin-repo
                     sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl get pods -n default -l app=user-admin-repo || true"
                     echo "배포 이벤트 확인:"
                     sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl describe deployment/user-admin-repo-deployment -n default || true"

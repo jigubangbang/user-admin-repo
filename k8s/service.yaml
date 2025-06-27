@@ -1,31 +1,23 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-admin-repo # Service 리소스의 이름을 레포지토리 이름으로만 지정
+  name: user-admin-repo
   labels:
-    app: user-admin-repo # 이 Service를 식별하기 위한 라벨 (Deployment의 라벨과 일치)
+    app: user-admin-repo
 spec:
-  # selector는 이 Service가 어떤 Pod들을 대상으로 할지 결정합니다.
-  # Deployment의 template.metadata.labels.app 값과 일치해야 합니다.
   selector:
     app: user-admin-repo
-  # Service 타입:
-  # ClusterIP: 클러스터 내부에서만 접근 가능한 가상 IP를 할당합니다. (기본값)
-  # 다른 서비스나 API Gateway에서 이 Service 이름(user-admin-repo)으로 접근하게 됩니다.
   type: ClusterIP
   ports:
-    # user-service 포트 매핑 (8081)
-    - name: http-user # 포트 이름 (클러스터 내부에서 서비스 구분 용이)
-      protocol: TCP # 사용할 프로토콜 (기본값 TCP)
-      port: 8081 # 이 Service가 클러스터 내부에서 노출할 포트 번호
-      targetPort: 8081 # Service로 들어온 요청을 전달할 Pod 컨테이너의 포트
-    # payment-service 포트 매핑 (8086)
-    - name: http-payment # 포트 이름
+    - name: http-user
+      protocol: TCP
+      port: 8081
+      targetPort: 8081
+    - name: http-payment
       protocol: TCP
       port: 8086
       targetPort: 8086
-    # admin-service 포트 매핑 (8082)
-    - name: http-admin # 포트 이름
+    - name: http-admin
       protocol: TCP
       port: 8082
       targetPort: 8082
