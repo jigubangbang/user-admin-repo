@@ -1,3 +1,4 @@
+#!/bin/sh
 echo "Starting Admin Service (port 8082)..."
 java -jar /app/admin-service.jar &
 ADMIN_PID=$!

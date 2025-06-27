@@ -30,7 +30,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-
                 // deployAWS 브랜치 체크아웃
                 // credentialsId는 Jenkins에 등록된 GitHub PAT Credential ID여야 합니다.
                 // 이 레포지토리의 크리덴셜 ID를 사용하세요 (예: 'github-user-admin-repo-pat')
@@ -59,12 +58,24 @@ pipeline {
                         sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl wait --for=condition=available deployment/config-server-deployment -n default --timeout=600s || exit 1"
                     }
                     echo "Config Server is ready."
+
+                    // --- Config Server 상태 상세 디버깅 시작 (user-admin-repo 배포 전) ---
+                    echo "--- Config Server 상태 상세 디버깅 시작 ---"
+                    echo "Config Server 파드 목록:"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl get pods -n default -l app=config-server || true"
+                    echo "Config Server 배포 이벤트 확인:"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl describe deployment/config-server-deployment -n default || true"
+                    echo "Config Server 파드 로그 확인 (왜 DOWN 상태인지 확인):"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl get pods -n default -l app=config-server -o custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c 'echo \"--- Config Server 파드 {} 로그: ---\"; KUBECONFIG=${env.KUBECONFIG_PATH} kubectl logs {} -n default || true; echo \"\";' || true"
+                    echo "--- Config Server 상태 상세 디버깅 끝 ---"
+                    // --- Config Server 자체 디버깅 끝 ---
+
                     retry(3) {
                         sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl wait --for=condition=available deployment/eureka-server-deployment -n default --timeout=600s || exit 1"
                     }
                     echo "Eureka Server is ready. Proceeding with user-admin-repo bundle."
 
-                    def ecrRepoName = 'msa-user-admin-bundle' // ECR 레포지토리 이름 (번들용)
+                    def ecrRepoName = 'msa-user-admin-repo' // ECR 레포지토리 이름 (번들용)
                     def fullEcrRepoUrl = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ecrRepoName}"
 
                     echo "--- Building and Deploying user-admin-repo bundle ---"
@@ -79,12 +90,43 @@ pipeline {
                         dockerImage.push("latest") // latest 태그도 함께 푸시
                     }
 
+                    // --- 기존 배포 강제 삭제 (새로운 이미지의 클린한 롤아웃을 보장하기 위해) ---
+                    echo "--- 기존 배포 강제 삭제 (새로운 이미지 클린 롤아웃 보장) ---"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl delete deployment user-admin-repo-deployment -n default --ignore-not-found || true"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl wait --for=delete deployment/user-admin-repo-deployment -n default --timeout=300s --for=delete || true"
+                    echo "--- 기존 배포 삭제 완료 (존재했다면) ---"
+                    // --- 기존 배포 강제 삭제 끝 ---
+
                     // Kubernetes Deployment/Service YAML 업데이트 및 적용
                     // k8s YAML 파일들은 user-admin-repo/k8s/ 디렉토리에 있다고 가정
                     sh """
                         KUBECONFIG=${env.KUBECONFIG_PATH} sed -i "s|__ECR_IMAGE_FULL_PATH__|${fullEcrRepoUrl}:${env.IMAGE_TAG}|g" k8s/deployment.yaml
                         KUBECONFIG=${env.KUBECONFIG_PATH} kubectl apply -f k8s/deployment.yaml -n default
                         KUBECONFIG=${env.KUBECONFIG_PATH} kubectl apply -f k8s/service.yaml -n default
+                    """
+
+                    // --- Kubernetes Deployment Debugging (user-admin-repo 파드 관련) ---
+                    echo "--- Kubernetes Deployment Debugging (user-admin-repo 파드 관련) ---"
+                    echo "배포 상태 확인 전 파드 목록:"
+                    // 'app' 레이블은 k8s/deployment.yaml의 spec.selector.matchLabels에 있는 값을 사용해야 합니다.
+                    // 예시: app=user-admin-repo
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl get pods -n default -l app=user-admin-repo || true"
+                    echo "배포 이벤트 확인:"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl describe deployment/user-admin-repo-deployment -n default || true"
+
+                    echo "파드 로그 확인 (메인 컨테이너):"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl get pods -n default -l app=user-admin-repo -o custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c 'echo \"--- 메인 컨테이너 {} 로그: ---\"; KUBECONFIG=${env.KUBECONFIG_PATH} kubectl logs {} -n default -c user-admin-repo-container || true; echo \"\";' || true"
+
+                    echo "파드 초기화 컨테이너 로그 확인 (wait-for-config-server):"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl get pods -n default -l app=user-admin-repo -o custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c 'echo \"--- 초기화 컨테이너 (config-server) {} 로그: ---\"; KUBECONFIG=${env.KUBECONFIG_PATH} kubectl logs {} -n default -c wait-for-config-server || true; echo \"\";' || true"
+
+                    echo "파드 초기화 컨테이너 로그 확인 (wait-for-eureka):"
+                    sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl get pods -n default -l app=user-admin-repo -o custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c 'echo \"--- 초기화 컨테이너 (eureka) {} 로그: ---\"; KUBECONFIG=${env.KUBECONFIG_PATH} kubectl logs {} -n default -c wait-for-eureka || true; echo \"\";' || true"
+
+                    echo "--- End Kubernetes Deployment Debugging (user-admin-repo 파드 관련) ---"
+                    // --- 디버깅 끝 ---
+
+                    sh """
                         KUBECONFIG=${env.KUBECONFIG_PATH} kubectl rollout status deployment/user-admin-repo-deployment -n default --timeout=600s || exit 1
                     """
                     echo "User-Admin-Repo bundle 배포 완료."
