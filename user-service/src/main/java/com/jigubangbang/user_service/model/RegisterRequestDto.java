@@ -42,4 +42,7 @@ public class RegisterRequestDto {
     private Boolean agreedRequired;
 
     private Boolean agreedOptional;
+    
+    private String provider;     // ex: "kakao", "google"
+    private String providerId;   // 소셜 플랫폼 고유 식별자
 }

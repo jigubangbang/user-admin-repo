@@ -16,7 +16,7 @@ public class SocialUserDto {
     private String profileImage;    // 프로필 이미지 URL (없으면 null)
     private String provider;        // "kakao", "naver", "google"
     
-    // 카카오 API 응답에서 SocialUserDto 생성하는 팩토리 메서드
+    // 카카오 API 응답에서 SocialUserDto 생성
     public static SocialUserDto fromKakao(java.util.Map<String, Object> userResponse) {
         // 1. 고유 ID
         String id = String.valueOf(userResponse.get("id"));

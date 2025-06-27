@@ -35,7 +35,9 @@
             email,
             tel,
             agreed_required,
-            agreed_optional
+            agreed_optional,
+            provider,
+            provider_id
         ) VALUES (
             #{userId},
             #{password},
@@ -44,7 +46,9 @@
             #{email},
             #{tel},
             #{agreedRequired},
-            #{agreedOptional}
+            #{agreedOptional},
+            #{provider},
+            #{providerId}
         )
     </insert>
 

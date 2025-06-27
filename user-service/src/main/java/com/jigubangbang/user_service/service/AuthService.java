@@ -72,40 +72,55 @@ public class AuthService {
     }
 
     public LoginResponseDto socialLogin(String code, String provider) {
-        
-        // 1. 소셜 플랫폼에서 사용자 정보 조회
-        SocialUserDto socialUser = socialOAuthService.getUserInfo(code, provider);
-        
-        // 2. 기존 사용자 조회 (이메일 기준)
-        UserDto existingUser = userMapper.findByEmail(socialUser.getEmail());
-        
+    // 1. 소셜 플랫폼에서 사용자 정보 조회
+    SocialUserDto socialUser = socialOAuthService.getUserInfo(code, provider);
+
+    // 2. 기존 사용자 조회 (이메일 기준)
+    UserDto existingUser = userMapper.findByEmail(socialUser.getEmail());
+
         if (existingUser == null) {
-            // 3. 신규 사용자 - 기존 RegisterRequestDto 재사용
-            String userId = generateRandomUserId();
-            
-            RegisterRequestDto newUser = new RegisterRequestDto();
-            newUser.setUserId(userId);
-            newUser.setPassword(""); // 소셜 로그인은 비밀번호 없음
-            newUser.setConfirmPassword(""); // 소셜 로그인은 비밀번호 확인 없음
-            newUser.setName(""); // 실명은 비워둠
-            newUser.setNickname(socialUser.getNickname()); // 닉네임만 저장
-            newUser.setEmail(socialUser.getEmail());
-            newUser.setTel("000-0000-0000"); // 기본값
-            newUser.setAgreedRequired(true); // 소셜 로그인은 필수 동의로 간주
-            newUser.setAgreedOptional(false);
-            
-            userMapper.insertUser(newUser);
-            existingUser = userMapper.findByEmail(socialUser.getEmail());
+            if (userMapper.existsByEmail(socialUser.getEmail())) {
+                existingUser = userMapper.findByEmail(socialUser.getEmail());
+            } else {
+                try {
+                    // 3. 신규 사용자 등록
+                    String userId = generateRandomUserId();
+
+                    RegisterRequestDto newUser = new RegisterRequestDto();
+                    newUser.setUserId(userId);
+                    newUser.setPassword(""); // 소셜 로그인은 비밀번호 없음
+                    newUser.setConfirmPassword("");
+                    newUser.setName("");
+                    newUser.setNickname(socialUser.getNickname());
+                    newUser.setEmail(socialUser.getEmail());
+                    newUser.setTel(null);
+                    newUser.setAgreedRequired(true);
+                    newUser.setAgreedOptional(false);
+                    newUser.setProvider(socialUser.getProvider()); 
+                    newUser.setProviderId(socialUser.getProviderId());
+
+                    userMapper.insertUser(newUser);
+                    existingUser = userMapper.findByEmail(socialUser.getEmail());
+                } catch (Exception e) {
+                    existingUser = userMapper.findByEmail(socialUser.getEmail());
+                }
+            }
         }
-        
+
         // 4. JWT 토큰 발급
         String accessToken = jwtTokenProvider.generateAccessToken(existingUser);
         String refreshToken = jwtTokenProvider.generateRefreshToken(existingUser.getId());
-        
+
         return LoginResponseDto.of(accessToken, refreshToken, existingUser);
     }
 
+
     private String generateRandomUserId() {
         return "user" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    public void logout(String userId) {
+        // 최소 구현
+        System.out.println("사용자 로그아웃 요청됨: " + userId);
     }
 }
