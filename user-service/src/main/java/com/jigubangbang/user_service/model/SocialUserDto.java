@@ -78,24 +78,43 @@ public class SocialUserDto {
             throw new RuntimeException("네이버 사용자 ID를 찾을 수 없습니다.");
         }
         
-        // 3. 이메일 (필수)
+        // 3. 이메일, 닉네임 (필수)
         String email = (String) response.get("email");
         if (email == null) {
             throw new IllegalArgumentException("이메일 제공에 동의하지 않으면 소셜 로그인 가입이 불가능합니다.");
         }
-        
-        // 4. 닉네임 (필수)
         String nickname = (String) response.get("nickname");
         
-        // 5. 이름 (선택)
+        // 5. 이름, 전화번호, 프로필이미지 (선택)
         String name = (String) response.get("name");
-        
-        // 6. 전화번호 (선택)
         String tel = (String) response.get("mobile");
-        
-        // 7. 프로필 이미지 (선택)
         String profileImage = (String) response.get("profile_image");
         
         return new SocialUserDto(id, email, nickname, name, tel, profileImage, "naver");
+    }
+
+    // 구글 API 응답에서 SocialUserDto 생성
+    public static SocialUserDto fromGoogle(java.util.Map<String, Object> userResponse) {
+        // 1. 고유 ID
+        String id = (String) userResponse.get("sub");
+        if (id == null) {
+            throw new RuntimeException("구글 사용자 ID를 찾을 수 없습니다.");
+        }
+
+        // 2. 이메일 (필수)
+        String email = (String) userResponse.get("email");
+        if (email == null) {
+            throw new IllegalArgumentException("이메일 제공에 동의하지 않으면 소셜 로그인 가입이 불가능합니다.");
+        }
+
+        // 3. 이름 및 닉네임
+        String name = (String) userResponse.get("name");
+        String nickname = name != null ? name : email.split("@")[0]; // 없으면 이메일 앞부분 사용
+
+        // 4. 프로필 이미지, 전화번호 (선택)
+        String profileImage = (String) userResponse.get("picture");
+        String tel = null;
+
+        return new SocialUserDto(id, email, nickname, name, tel, profileImage, "google");
     }
 }

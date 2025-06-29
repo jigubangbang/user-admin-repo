@@ -32,6 +32,16 @@ public class SocialOAuthService {
     @Value("${oauth.naver.redirect-uri}")
     private String naverRedirectUri;
 
+    // 구글 설정
+    @Value("${oauth.google.client-id}")
+    private String googleClientId;
+
+    @Value("${oauth.google.client-secret}")
+    private String googleClientSecret;
+
+    @Value("${oauth.google.redirect-uri}")
+    private String googleRedirectUri;
+
     private final WebClient webClient = WebClient.create();
 
     // 통합 사용자 정보 조회
@@ -42,7 +52,7 @@ public class SocialOAuthService {
             case "naver":
                 return getNaverUserInfo(code); 
             case "google":
-                throw new UnsupportedOperationException("구글 로그인은 아직 지원하지 않습니다.");
+                return getGoogleUserInfo(code);
             default:
                 throw new IllegalArgumentException("지원하지 않는 소셜 로그인 플랫폼입니다: " + provider);
         }
@@ -123,5 +133,41 @@ public class SocialOAuthService {
         );
 
         return SocialUserDto.fromNaver(userResponse);
+    }
+
+    // 구글 사용자 정보 조회
+    private SocialUserDto getGoogleUserInfo(String code) {
+        Map<String, Object> tokenResponse = Objects.requireNonNull(
+            webClient.post()
+                .uri("https://oauth2.googleapis.com/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData("grant_type", "authorization_code")
+                    .with("client_id", googleClientId)
+                    .with("client_secret", googleClientSecret)
+                    .with("redirect_uri", googleRedirectUri)
+                    .with("code", code)
+                )
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block(),
+            "구글 토큰 응답이 NULL입니다."
+        );
+
+        String accessToken = (String) tokenResponse.get("access_token");
+        if (accessToken == null) {
+            throw new RuntimeException("구글 AccessToken 발급 실패: " + tokenResponse);
+        }
+
+        Map<String, Object> userResponse = Objects.requireNonNull(
+            webClient.get()
+                .uri("https://www.googleapis.com/oauth2/v3/userinfo")
+                .headers(headers -> headers.setBearerAuth(accessToken))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block(),
+            "구글 사용자 정보 응답이 NULL입니다."
+        );
+
+        return SocialUserDto.fromGoogle(userResponse);
     }
 }
