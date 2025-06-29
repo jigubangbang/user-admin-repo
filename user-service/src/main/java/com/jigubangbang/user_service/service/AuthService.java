@@ -90,10 +90,10 @@ public class AuthService {
                     newUser.setUserId(userId);
                     newUser.setPassword(""); // 소셜 로그인은 비밀번호 없음
                     newUser.setConfirmPassword("");
-                    newUser.setName("");
+                    newUser.setName(socialUser.getName());
                     newUser.setNickname(socialUser.getNickname());
                     newUser.setEmail(socialUser.getEmail());
-                    newUser.setTel(null);
+                    newUser.setTel(socialUser.getTel());
                     newUser.setAgreedRequired(true);
                     newUser.setAgreedOptional(false);
                     newUser.setProvider(socialUser.getProvider()); 
