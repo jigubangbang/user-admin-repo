@@ -2,14 +2,20 @@ package com.jigubangbang.user_service.service;
 
 import com.jigubangbang.user_service.mapper.EmailMapper;
 import com.jigubangbang.user_service.model.EmailDto;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.util.Random;
+
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +23,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final EmailMapper emailMapper;
+    private final TemplateEngine templateEngine;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -33,21 +40,24 @@ public class EmailService {
 
         emailMapper.insertOrUpdateCode(dto);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("[JIGUBANGBANG] 이메일 인증코드 안내");
-        message.setText(
-            "안녕하세요, 지구방방입니다.\n\n" +
-            "회원가입을 위한 이메일 인증 코드입니다.\n" +
-            "아래의 인증코드를 입력해 주세요.\n\n" +
-            "인증코드: " + code + "\n" +
-            "유효시간: 3분\n\n" +
-            "인증 시간이 만료된 경우, 다시 요청해 주세요.\n\n" +
-            "감사합니다!"
-        );
-        message.setFrom(fromEmail);
-
-        mailSender.send(message);
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(email);
+            helper.setSubject("[지구방방] 이메일 인증코드 안내");
+            helper.setFrom(fromEmail);
+            
+            Context context = new Context();
+            context.setVariable("code", code);
+            String htmlContent = templateEngine.process("email-veri", context);
+            
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            
+        } catch (MessagingException e) {
+            throw new RuntimeException("이메일 전송 중 오류가 발생했습니다.", e);
+        }
     }
 
     // 인증 코드 검증
