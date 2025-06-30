@@ -29,9 +29,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/").permitAll()
-                .requestMatchers("/health-check", "/actuator/**").permitAll()
-                .anyRequest().permitAll()  // 현재는 모든 요청 허용
+                .requestMatchers("/auth/**", "/", "/health-check", "/actuator/**").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+                // .requestMatchers("/quest/**").hasAnyRole("USER", "ADMIN") 예시
+                // .requestMatchers("/mypage/**").hasAnyRole("USER", "ADMIN") 예시
+                // .requestMatchers("/premium/**").hasRole("PREMIUM_USER") 예시
+                .anyRequest().permitAll()  // 현재는 모든 요청 허용 -> 나중에는 .authenticated()로 변경 
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .build();

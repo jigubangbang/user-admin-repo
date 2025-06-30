@@ -68,5 +68,16 @@ public class AuthController {
         LoginResponseDto response = authService.socialLogin(request.getCode(), provider);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<LoginResponseDto> refreshAccessToken(
+            @RequestHeader("Authorization") String refreshTokenHeader) {
+        try {
+            LoginResponseDto response = authService.refreshAccessToken(refreshTokenHeader);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).build(); // RefreshToken 유효하지 않음
+        }
+    }
 }
 

@@ -31,23 +31,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             String token = parseToken(request); // 헤더에서 토큰 추출
 
-            if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-                String userId = jwtTokenProvider.getUserIdFromToken(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
+            if (StringUtils.hasText(token)) {
+                if (jwtTokenProvider.validateToken(token)) {
+                    String userId = jwtTokenProvider.getUserIdFromToken(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
 
-                // 인증 객체 생성 및 보안 컨텍스트에 설정
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                logger.info("JWT 인증 성공 - 사용자 ID: {}", userId);
+                    logger.info("JWT 인증 성공 - 사용자 ID: {}", userId);
+                } else {
+                    logger.warn("JWT 유효하지 않음");
+                    SecurityContextHolder.clearContext();
+                }
+            } else {
+                logger.info("JWT 토큰 없음 - 인증 없이 진행");
             }
         } catch (Exception e) {
-            logger.warn("JWT 인증 실패: {}", e.getMessage());
+            logger.error("JWT 인증 예외 발생: {}", e.getMessage());
+            SecurityContextHolder.clearContext(); // 인증 실패 시 컨텍스트 초기화
         }
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(request, response); // Spring Security로 넘김
     }
 
     private String parseToken(HttpServletRequest request) {

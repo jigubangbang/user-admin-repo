@@ -118,4 +118,30 @@ public class AuthService {
     private String generateRandomUserId() {
         return "user" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
+
+    public LoginResponseDto refreshAccessToken(String tokenHeader) {
+        // 순수 토큰만 추출
+        String token = tokenHeader.replace("Bearer ", "");
+
+        // 유효성 검사: refresh token인지 확인
+        if (!jwtTokenProvider.validateToken(token) ||
+            !"refresh".equals(jwtTokenProvider.getTokenType(token))) {
+            throw new IllegalArgumentException("유효하지 않은 RefreshToken입니다.");
+        }
+
+        // 토큰에서 사용자 ID 추출
+        String userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        // 사용자 정보 조회
+        UserDto user = userMapper.findUserById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("사용자 정보를 찾을 수 없습니다.");
+        }
+
+        // 새 AccessToken 발급 (RefreshToken은 그대로 재사용)
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user);
+
+        return LoginResponseDto.of(newAccessToken, token, user); // 기존 RefreshToken 그대로
+    }
+
 }
