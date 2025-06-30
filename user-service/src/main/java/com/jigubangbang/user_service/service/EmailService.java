@@ -107,4 +107,26 @@ public class EmailService {
         }
     }
 
+    public void sendTempPassword(String email, String tempPassword) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(email);
+            helper.setSubject("[지구방방] 비밀번호 찾기 결과 안내");
+            helper.setFrom(fromEmail);
+
+            Context context = new Context();
+            context.setVariable("tempPassword", tempPassword); 
+
+            String htmlContent = templateEngine.process("find-pwd", context); 
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+
+        } catch (MessagingException e) {
+            throw new RuntimeException("임시 비밀번호 전송 중 오류가 발생했습니다.", e);
+        }
+    }
+
 }

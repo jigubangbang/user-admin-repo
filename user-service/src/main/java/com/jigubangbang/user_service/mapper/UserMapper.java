@@ -2,8 +2,12 @@ package com.jigubangbang.user_service.mapper;
 
 import com.jigubangbang.user_service.model.AuthDto;
 import com.jigubangbang.user_service.model.FindIdResponseDto;
+import com.jigubangbang.user_service.model.FindPwdResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
 import com.jigubangbang.user_service.model.UserDto;
+
+import java.time.LocalDateTime;
+
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
@@ -29,5 +33,11 @@ public interface UserMapper {
 
     // 아이디 찾기
     FindIdResponseDto findByNameAndEmail(String name, String email);
+    
+    // 비밀번호 찾기
+    FindPwdResponseDto findByUserIdNameEmail(String userId, String name, String email);
+
+    // 임시 비밀번호 발급
+    void updatePasswordAndTempPwdAt(String userId, String password, LocalDateTime tempPwdAt);
 
 }

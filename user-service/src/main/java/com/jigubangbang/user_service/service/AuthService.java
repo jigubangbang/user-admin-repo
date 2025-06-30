@@ -3,6 +3,8 @@ package com.jigubangbang.user_service.service;
 import com.jigubangbang.user_service.mapper.UserMapper;
 import com.jigubangbang.user_service.model.FindIdRequestDto;
 import com.jigubangbang.user_service.model.FindIdResponseDto;
+import com.jigubangbang.user_service.model.FindPwdRequestDto;
+import com.jigubangbang.user_service.model.FindPwdResponseDto;
 import com.jigubangbang.user_service.model.LoginRequestDto;
 import com.jigubangbang.user_service.model.LoginResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
@@ -163,5 +165,41 @@ public class AuthService {
         }
         emailService.sendFoundUserId(dto.getEmail(), result.getUserId());
         return ResponseEntity.ok(Map.of("userId", result.getUserId()));
+    }
+
+    public ResponseEntity<?> findUserPassword(FindPwdRequestDto dto) {
+        FindPwdResponseDto result = userMapper.findByUserIdNameEmail(
+            dto.getUserId(), dto.getName(), dto.getEmail()
+        );
+
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        if (result.getProvider() != null) {
+            return ResponseEntity.ok(Map.of("isSocial", true));
+        }
+
+        if (result.getTempPwdAt() != null &&
+            result.getTempPwdAt().isAfter(java.time.LocalDateTime.now().minusMinutes(30))) {
+            result.setLimited(true);
+            return ResponseEntity.ok(result); 
+        }
+
+        // 임시 비밀번호 생성
+        String tempPassword = generateTempPassword();
+        String encodedPassword = passwordEncoder.encode(tempPassword);
+
+        // 비밀번호 및 발급시각 갱신
+        userMapper.updatePasswordAndTempPwdAt(result.getUserId(), encodedPassword, java.time.LocalDateTime.now());
+
+        // 이메일 발송
+        emailService.sendTempPassword(dto.getEmail(), tempPassword);
+
+        return ResponseEntity.ok(Map.of("issued", true));
+    }
+
+    private String generateTempPassword() {
+        return java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 10);
     }
 }

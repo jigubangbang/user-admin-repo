@@ -85,4 +85,24 @@
         WHERE name = #{name}
         AND email = #{email}
     </select>
+
+    <!-- 아이디 + 이름 + 이메일로 사용자 조회 (비밀번호 찾기) -->
+    <select id="findByUserIdNameEmail" resultType="com.jigubangbang.user_service.model.FindPwdResponseDto">
+        SELECT
+            user_id AS userId,
+            provider,
+            temp_pwd_at AS tempPwdAt
+        FROM user
+        WHERE user_id = #{userId}
+        AND name = #{name}
+        AND email = #{email}
+    </select>
+
+    <!-- 임시 비밀번호 발급 -->
+    <update id="updatePasswordAndTempPwdAt">
+        UPDATE user
+        SET password = #{password},
+            temp_pwd_at = #{tempPwdAt}
+        WHERE user_id = #{userId}
+    </update>
 </mapper>
