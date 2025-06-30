@@ -1,0 +1,11 @@
+package com.jigubangbang.user_service.model;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class FindIdResponseDto {
+    private String userId;
+    private String provider;
+}

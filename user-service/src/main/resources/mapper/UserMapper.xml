@@ -66,7 +66,7 @@
         )
     </select>
 
-    <!-- 이메일로 사용자 조회 (소셜 로그인용) -->
+    <!-- 이메일로 사용자 조회 (소셜 로그인) -->
     <select id="findByEmail" resultType="com.jigubangbang.user_service.model.UserDto">
         SELECT
             user_id AS id,
@@ -74,5 +74,15 @@
             role
         FROM user
         WHERE email = #{email}
+    </select>
+
+    <!-- 이름 + 이메일로 사용자 조회 (아이디 찾기) -->
+    <select id="findByNameAndEmail" resultType="com.jigubangbang.user_service.model.FindIdResponseDto">
+        SELECT
+            user_id AS userId,
+            provider
+        FROM user
+        WHERE name = #{name}
+        AND email = #{email}
     </select>
 </mapper>

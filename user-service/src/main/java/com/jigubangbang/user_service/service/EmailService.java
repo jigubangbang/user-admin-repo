@@ -56,7 +56,7 @@ public class EmailService {
             mailSender.send(message);
             
         } catch (MessagingException e) {
-            throw new RuntimeException("이메일 전송 중 오류가 발생했습니다.", e);
+            throw new RuntimeException("인증코드 전송 중 오류가 발생했습니다.", e);
         }
     }
 
@@ -84,4 +84,27 @@ public class EmailService {
         int number = 100000 + new Random().nextInt(900000);
         return String.valueOf(number);
     }
+
+    public void sendFoundUserId(String email, String userId) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(email);
+            helper.setSubject("[지구방방] 아이디 찾기 결과 안내");
+            helper.setFrom(fromEmail);
+
+            Context context = new Context();
+            context.setVariable("userId", userId); 
+
+            String htmlContent = templateEngine.process("find-id", context);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+
+        } catch (MessagingException e) {
+            throw new RuntimeException("아이디 전송 중 오류가 발생했습니다.", e);
+        }
+    }
+
 }

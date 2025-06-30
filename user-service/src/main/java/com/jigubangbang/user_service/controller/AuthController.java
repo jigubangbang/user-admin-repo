@@ -1,6 +1,7 @@
 package com.jigubangbang.user_service.controller;
 
 import com.jigubangbang.user_service.model.EmailDto;
+import com.jigubangbang.user_service.model.FindIdRequestDto;
 import com.jigubangbang.user_service.model.LoginRequestDto;
 import com.jigubangbang.user_service.model.LoginResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
@@ -78,6 +79,11 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401).build(); // RefreshToken 유효하지 않음
         }
+    }
+
+    @PostMapping("/find-id")
+    public ResponseEntity<?> findUserId(@RequestBody FindIdRequestDto dto) {
+        return authService.findUserId(dto);
     }
 }
 

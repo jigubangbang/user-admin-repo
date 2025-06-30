@@ -1,6 +1,8 @@
 package com.jigubangbang.user_service.service;
 
 import com.jigubangbang.user_service.mapper.UserMapper;
+import com.jigubangbang.user_service.model.FindIdRequestDto;
+import com.jigubangbang.user_service.model.FindIdResponseDto;
 import com.jigubangbang.user_service.model.LoginRequestDto;
 import com.jigubangbang.user_service.model.LoginResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
@@ -8,6 +10,11 @@ import com.jigubangbang.user_service.model.SocialUserDto;
 import com.jigubangbang.user_service.model.UserDto;
 import com.jigubangbang.user_service.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,12 +25,12 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final SocialOAuthService socialOAuthService;
+    private final EmailService emailService;
 
     public LoginResponseDto login(LoginRequestDto request) {
 
@@ -144,4 +151,17 @@ public class AuthService {
         return LoginResponseDto.of(newAccessToken, token, user); // 기존 RefreshToken 그대로
     }
 
+    public ResponseEntity<?> findUserId(FindIdRequestDto dto) {
+        FindIdResponseDto result = userMapper.findByNameAndEmail(dto.getName(), dto.getEmail());
+
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        if (result.getProvider() != null) {
+            return ResponseEntity.ok(Map.of("isSocial", true));
+        }
+        emailService.sendFoundUserId(dto.getEmail(), result.getUserId());
+        return ResponseEntity.ok(Map.of("userId", result.getUserId()));
+    }
 }
