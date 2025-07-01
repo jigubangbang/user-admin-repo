@@ -20,7 +20,13 @@
         SELECT
             user_id AS id,
             name,
-            role
+            role,
+            nickname,
+            email,
+            tel,
+            profile_image AS profileImage,
+            user_status AS userStatus,
+            is_premium AS isPremium
         FROM user
         WHERE user_id = #{userId}
     </select>
@@ -103,6 +109,17 @@
         UPDATE user
         SET password = #{password},
             temp_pwd_at = #{tempPwdAt}
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 회원 정보 수정 -->
+    <update id="updateUserInfo">
+        UPDATE user
+        SET
+            name = #{dto.name},
+            nickname = #{dto.nickname},
+            tel = #{dto.tel},
+            updated_at = CURRENT_TIMESTAMP
         WHERE user_id = #{userId}
     </update>
 </mapper>

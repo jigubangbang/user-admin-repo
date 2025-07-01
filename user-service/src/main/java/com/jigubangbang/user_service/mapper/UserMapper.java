@@ -4,11 +4,13 @@ import com.jigubangbang.user_service.model.AuthDto;
 import com.jigubangbang.user_service.model.FindIdResponseDto;
 import com.jigubangbang.user_service.model.FindPwdResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
+import com.jigubangbang.user_service.model.UpdateUserDto;
 import com.jigubangbang.user_service.model.UserDto;
 
 import java.time.LocalDateTime;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface UserMapper {
@@ -39,5 +41,8 @@ public interface UserMapper {
 
     // 임시 비밀번호 발급
     void updatePasswordAndTempPwdAt(String userId, String password, LocalDateTime tempPwdAt);
+
+    // 회원 정보 수정
+    int updateUserInfo(@Param("userId") String userId, @Param("dto") UpdateUserDto dto);
 
 }

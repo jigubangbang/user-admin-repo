@@ -3,7 +3,6 @@ package com.jigubangbang.user_service.controller;
 import com.jigubangbang.user_service.model.EmailDto;
 import com.jigubangbang.user_service.model.FindIdRequestDto;
 import com.jigubangbang.user_service.model.FindPwdRequestDto;
-import com.jigubangbang.user_service.model.FindPwdResponseDto;
 import com.jigubangbang.user_service.model.LoginRequestDto;
 import com.jigubangbang.user_service.model.LoginResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
