@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace는 PremiumHistoryMapper 인터페이스의 전체 경로와 일치해야 합니다. -->
+<mapper namespace="com.jigubangbang.payment_service.mapper.PremiumHistoryMapper">
+
+    <!-- createPremiumHistory 메소드에 대한 SQL 쿼리 -->
+    <insert id="createPremiumHistory" parameterType="com.jigubangbang.payment_service.model.PremiumHistoryDto">
+        INSERT INTO premium_log
+            (user_id, start_date, end_date, is_active)
+        VALUES
+            (#{userId}, NOW(), #{endDate}, #{isActive})
+    </insert>
+
+    <!-- findActiveByUserId 메소드에 대한 SQL 쿼리 -->
+    <select id="findActiveByUserId" parameterType="string" resultType="com.jigubangbang.payment_service.model.PremiumHistoryDto">
+        SELECT
+            id,
+            user_id,
+            start_date,
+            end_date,
+            is_active
+        FROM
+            premium_log
+        WHERE
+            user_id = #{userId} AND is_active = TRUE
+        ORDER BY
+            start_date DESC
+        LIMIT 1
+    </select>
+
+    <!-- updatePremiumHistory 메소드에 대한 SQL 쿼리 -->
+    <update id="updatePremiumHistory" parameterType="com.jigubangbang.payment_service.model.PremiumHistoryDto">
+        UPDATE
+            premium_log
+        SET
+            end_date = #{endDate},
+            is_active = #{isActive}
+        WHERE
+            id = #{id}
+    </update>
+
+    <!-- findExpiringSubscriptions 메소드에 대한 SQL 쿼리 (자동결제 대상 조회) -->
+    <select id="findExpiringSubscriptions" parameterType="java.time.LocalDateTime" resultType="com.jigubangbang.payment_service.model.PremiumHistoryDto">
+        SELECT
+            id,
+            user_id,
+            start_date,
+            end_date,
+            is_active
+        FROM
+            premium_log
+        WHERE
+            is_active = TRUE AND end_date &lt; #{expirationDate}
+    </select>
+
+</mapper>
