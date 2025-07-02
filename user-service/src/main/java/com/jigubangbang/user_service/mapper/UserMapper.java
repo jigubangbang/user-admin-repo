@@ -47,4 +47,13 @@ public interface UserMapper {
 
     // 닉네임 최근 변경일 조회
     LocalDateTime getNicknameUpdatedAt(String userId);
+
+    // 현재 비밀번호 조회
+    String getCurrentPassword(String userId);
+
+    // 비밀번호 업데이트
+    int updatePassword(@Param("userId") String userId, @Param("newPassword") String newPassword);
+
+    // 이메일 변경
+    int updateEmail(@Param("userId") String userId, @Param("newEmail") String newEmail);
 }

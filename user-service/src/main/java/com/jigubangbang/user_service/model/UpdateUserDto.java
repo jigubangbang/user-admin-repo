@@ -15,17 +15,4 @@ public class UpdateUserDto {
 
     @Pattern(regexp = "^\\d{3}-\\d{3,4}-\\d{4}$", message = "올바른 전화번호 형식으로 입력해 주세요.")
     private String tel;
-
-    @Email(message = "올바른 이메일 형식으로 입력해 주세요.")
-    private String email;
-    
-    private String emailCode;
-
-    private String currentPassword;
-
-    @Pattern(
-        regexp = "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#\\-_$%^&*])[A-Za-z\\d!@#\\-_$%^&*]{8,20}$",
-        message = "비밀번호는 8~20자의 영문, 숫자, 특수문자를 모두 포함해야 합니다."
-    )
-    private String newPassword;
 }

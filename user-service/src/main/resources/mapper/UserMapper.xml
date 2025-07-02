@@ -132,4 +132,27 @@
         FROM user
         WHERE user_id = #{userId}
     </select>
+
+    <!-- 현재 비밀번호 조회 -->
+    <select id="getCurrentPassword" resultType="string">
+        SELECT password
+        FROM user
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 비밀번호 변경 -->
+    <update id="updatePassword">
+        UPDATE user
+        SET password = #{newPassword},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 이메일 변경 -->
+    <update id="updateEmail">
+        UPDATE user
+        SET email = #{newEmail},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
 </mapper>

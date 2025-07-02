@@ -1,11 +1,14 @@
 package com.jigubangbang.user_service.controller;
 
 import com.jigubangbang.user_service.model.AuthDto;
+import com.jigubangbang.user_service.model.ChangeEmailDto;
+import com.jigubangbang.user_service.model.ChangePwdDto;
 import com.jigubangbang.user_service.model.UpdateUserDto;
 import com.jigubangbang.user_service.model.UserDto;
 import com.jigubangbang.user_service.service.UserService;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,7 +31,46 @@ public class UserController {
     // 내 정보 수정
     @PutMapping("/me")
     public ResponseEntity<String> updateMyInfo(@AuthenticationPrincipal AuthDto user, @Valid @RequestBody UpdateUserDto dto) {
-        userService.updateUserInfo(user.getUsername(), dto);
-        return ResponseEntity.ok("회원정보가 성공적으로 수정되었습니다.");
+        try {
+            userService.updateUserInfo(user.getUsername(), dto);
+            return ResponseEntity.ok("회원정보가 성공적으로 수정되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
+
+
+    // 비밀번호 변경
+    @PutMapping("/password")
+    public ResponseEntity<String> changePassword(@AuthenticationPrincipal AuthDto user, @Valid @RequestBody ChangePwdDto dto) {
+        try {
+            userService.changePassword(user.getUsername(), dto);
+            return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 이메일 변경 요청
+    @PostMapping("/email/change-request")
+    public ResponseEntity<String> requestEmailChange(@AuthenticationPrincipal AuthDto user, @RequestParam("email") @Email String newEmail) {
+        try {
+            userService.requestEmailChange(user.getUsername(), newEmail);
+            return ResponseEntity.ok("인증 코드가 이메일로 전송되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 이메일 변경 확인
+    @PutMapping("/email/change-confirm")
+    public ResponseEntity<String> confirmEmailChange(@AuthenticationPrincipal AuthDto user, @Valid @RequestBody ChangeEmailDto dto) {
+        try {
+            userService.confirmEmailChange(user.getUsername(), dto);
+            return ResponseEntity.ok("이메일이 성공적으로 변경되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

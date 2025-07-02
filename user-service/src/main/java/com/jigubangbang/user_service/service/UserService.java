@@ -1,6 +1,8 @@
 package com.jigubangbang.user_service.service;
 
 import com.jigubangbang.user_service.mapper.UserMapper;
+import com.jigubangbang.user_service.model.ChangeEmailDto;
+import com.jigubangbang.user_service.model.ChangePwdDto;
 import com.jigubangbang.user_service.model.UpdateUserDto;
 import com.jigubangbang.user_service.model.UserDto;
 
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,6 +19,8 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     // 회원 정보 조회
     public UserDto getUserInfo(String userId) {
@@ -56,4 +61,50 @@ public class UserService {
             throw new IllegalArgumentException("회원 정보 수정에 실패했습니다.");
         }
     }
+
+    // 비밀번호 변경
+    public void changePassword(String userId, ChangePwdDto dto) {
+        String currentPasswordHash = userMapper.getCurrentPassword(userId);
+
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), currentPasswordHash)) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        String encodedNewPassword = passwordEncoder.encode(dto.getNewPassword());
+        int updated = userMapper.updatePassword(userId, encodedNewPassword);
+
+        if (updated == 0) {
+            throw new IllegalArgumentException("비밀번호 변경에 실패했습니다.");
+        }
+    }
+
+    // 이메일 변경 요청
+    public void requestEmailChange(String userId, String newEmail) {
+        String currentEmail = userMapper.findUserById(userId).getEmail();
+
+        if (currentEmail.equals(newEmail)) {
+            throw new IllegalArgumentException("기존 이메일과 동일합니다.");
+        }
+
+        if (userMapper.existsByEmail(newEmail)) {
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+        }
+
+        emailService.sendVerificationCode(newEmail);
+    }
+
+    // 이메일 변경 확인
+    public void confirmEmailChange(String userId, ChangeEmailDto dto) {
+        boolean verified = emailService.verifyCode(dto.getEmail(), dto.getEmailCode());
+
+        if (!verified) {
+            throw new IllegalArgumentException("인증코드가 올바르지 않거나 만료되었습니다. 다시 시도해주세요.");
+        }
+
+        int updated = userMapper.updateEmail(userId, dto.getEmail());
+        if (updated == 0) {
+            throw new IllegalArgumentException("이메일 변경에 실패했습니다.");
+        }
+    }
+
 }
