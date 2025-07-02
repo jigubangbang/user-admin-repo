@@ -47,7 +47,7 @@ public class UserService {
                 if (lastUpdated != null) {
                     long daysSince = ChronoUnit.DAYS.between(lastUpdated, LocalDateTime.now());
                     if (daysSince < 30) {
-                        throw new IllegalArgumentException("닉네임은 변경 후 30일이 지나야 변경 가능합니다.");
+                        throw new IllegalArgumentException("닉네임은 30일마다 변경 가능합니다.");
                     }
                 }
             } else {
