@@ -1,5 +1,7 @@
 package com.jigubangbang.user_service.model;
 
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,4 +21,6 @@ public class UserDto {
     private String profileImage;
     private String userStatus;
     private boolean isPremium;
+
+    private LocalDateTime nicknameUnlockAt;
 }

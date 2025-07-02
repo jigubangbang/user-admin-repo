@@ -45,4 +45,6 @@ public interface UserMapper {
     // 회원 정보 수정
     int updateUserInfo(@Param("userId") String userId, @Param("dto") UpdateUserDto dto);
 
+    // 닉네임 최근 변경일 조회
+    LocalDateTime getNicknameUpdatedAt(String userId);
 }

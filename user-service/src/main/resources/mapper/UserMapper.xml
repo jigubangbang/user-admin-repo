@@ -117,9 +117,19 @@
         UPDATE user
         SET
             name = #{dto.name},
-            nickname = #{dto.nickname},
             tel = #{dto.tel},
+            <if test="dto.nickname != null">
+                nickname = #{dto.nickname},
+                nickname_updated_at = CURRENT_TIMESTAMP,
+            </if>
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = #{userId}
     </update>
+
+    <!-- 닉네임 최근 변경일 조회 -->
+    <select id="getNicknameUpdatedAt" resultType="java.time.LocalDateTime">
+        SELECT nickname_updated_at
+        FROM user
+        WHERE user_id = #{userId}
+    </select>
 </mapper>
