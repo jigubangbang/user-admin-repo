@@ -16,4 +16,5 @@ public class WithdrawalRequestDto {
     )
     private String reasonCode;
     private String reasonText;
+    private String password;
 }
