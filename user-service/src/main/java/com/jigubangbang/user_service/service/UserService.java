@@ -5,6 +5,7 @@ import com.jigubangbang.user_service.model.ChangeEmailDto;
 import com.jigubangbang.user_service.model.ChangePwdDto;
 import com.jigubangbang.user_service.model.UpdateUserDto;
 import com.jigubangbang.user_service.model.UserDto;
+import com.jigubangbang.user_service.model.WithdrawalRequestDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -107,4 +108,15 @@ public class UserService {
         }
     }
 
+    // 자발적 회원 탈퇴
+    public void withdrawUser(String userId, WithdrawalRequestDto dto) {
+        // 탈퇴 이력 저장
+        userMapper.insertWithdrawal(userId, dto.getReasonCode(), dto.getReasonText(), "SELF");
+
+        // 회원 상태 WITHDRAWN으로 변경
+        int updated = userMapper.updateUserAsWithdrawn(userId);
+        if (updated == 0) {
+            throw new IllegalArgumentException("회원 탈퇴에 실패했습니다.");
+        }
+    }
 }

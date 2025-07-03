@@ -10,7 +10,8 @@
             user_id AS id,
             password,
             role,
-            user_status AS status
+            user_status AS status,
+            banned_until
         FROM user
         WHERE user_id = #{userId}
     </select>
@@ -30,6 +31,15 @@
         FROM user
         WHERE user_id = #{userId}
     </select>
+
+    <!-- 정지 회원 복구 -->
+    <update id="restoreUserToActive">
+        UPDATE user
+        SET user_status = 'ACTIVE',
+            banned_until = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
 
     <!-- 회원가입 -->
     <insert id="insertUser" parameterType="com.jigubangbang.user_service.model.RegisterRequestDto">
@@ -152,6 +162,29 @@
     <update id="updateEmail">
         UPDATE user
         SET email = #{newEmail},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 탈퇴 이력 저장 -->
+    <insert id="insertWithdrawal">
+        INSERT INTO withdrawal (
+            user_id,
+            reason_code,
+            reason_text,
+            withdrawal_type
+        ) VALUES (
+            #{userId},
+            #{reasonCode},
+            #{reasonText},
+            #{withdrawalType}
+        )
+    </insert>
+
+    <!-- 회원 상태 WITHDRAWN으로 변경 -->
+   <update id="updateUserAsWithdrawn">
+        UPDATE user
+        SET user_status = 'WITHDRAWN',
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = #{userId}
     </update>

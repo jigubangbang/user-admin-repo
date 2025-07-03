@@ -21,6 +21,9 @@ public interface UserMapper {
     // 일반 사용자 정보 조회
     UserDto findUserById(String userId);
 
+    // 정지 회원 복구
+    int restoreUserToActive(String userId);
+
     // 회원가입
     void insertUser(RegisterRequestDto dto);
 
@@ -35,7 +38,7 @@ public interface UserMapper {
 
     // 아이디 찾기
     FindIdResponseDto findByNameAndEmail(String name, String email);
-    
+
     // 비밀번호 찾기
     FindPwdResponseDto findByUserIdNameEmail(String userId, String name, String email);
 
@@ -56,4 +59,14 @@ public interface UserMapper {
 
     // 이메일 변경
     int updateEmail(@Param("userId") String userId, @Param("newEmail") String newEmail);
+
+    // 탈퇴 이력 저장
+    void insertWithdrawal(
+            @Param("userId") String userId,
+            @Param("reasonCode") String reasonCode,
+            @Param("reasonText") String reasonText,
+            @Param("withdrawalType") String withdrawalType);
+    
+    // 회원 상태 WITHDRAWN으로 변경
+    int updateUserAsWithdrawn(@Param("userId") String userId);
 }

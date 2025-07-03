@@ -1,5 +1,6 @@
 package com.jigubangbang.user_service.controller;
 
+import com.jigubangbang.user_service.exception.UserStatusException;
 import com.jigubangbang.user_service.model.EmailDto;
 import com.jigubangbang.user_service.model.FindIdRequestDto;
 import com.jigubangbang.user_service.model.FindPwdRequestDto;
@@ -12,6 +13,9 @@ import com.jigubangbang.user_service.service.EmailService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,9 +28,19 @@ public class AuthController {
     private final EmailService emailService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto request) {
-        LoginResponseDto response = authService.login(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> login(@RequestBody LoginRequestDto request) {
+        try {
+            LoginResponseDto response = authService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (UserStatusException e) {
+            return ResponseEntity.status(401).body(
+                    Map.of("message", e.getMessage()) 
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(
+                    Map.of("message", e.getMessage()) 
+            );
+        }
     }
 
     @PostMapping("/register")
@@ -62,7 +76,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body("유효하지 않거나 만료된 인증코드입니다.");
         }
     }
-    
+
     @PostMapping("/{provider}")
     public ResponseEntity<LoginResponseDto> socialLogin(
             @PathVariable String provider,
