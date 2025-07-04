@@ -21,6 +21,6 @@ public class UserDto {
     private String profileImage;
     private String userStatus;
     private boolean isPremium;
-
+    private String provider;
     private LocalDateTime nicknameUnlockAt;
 }

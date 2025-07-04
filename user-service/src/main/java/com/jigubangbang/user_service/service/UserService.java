@@ -110,10 +110,16 @@ public class UserService {
 
     // 자발적 회원 탈퇴
     public void withdrawUser(String userId, WithdrawalRequestDto dto) {
-        // 비밀번호 검증
-        String currentPasswordHash = userMapper.getCurrentPassword(userId);
-        if (!passwordEncoder.matches(dto.getPassword(), currentPasswordHash)) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        // 회원 정보 조회
+        UserDto user = userMapper.findUserById(userId);
+
+        // 소셜 로그인 회원이 아닐 경우에만 비밀번호 검증
+        if (user.getProvider() == null || user.getProvider().isBlank()) {
+            String currentPasswordHash = userMapper.getCurrentPassword(userId);
+
+            if (currentPasswordHash == null || !passwordEncoder.matches(dto.getPassword(), currentPasswordHash)) {
+                throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            }
         }
 
         // 탈퇴 이력 저장

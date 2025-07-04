@@ -27,7 +27,8 @@
             tel,
             profile_image AS profileImage,
             user_status AS userStatus,
-            is_premium AS isPremium
+            is_premium AS isPremium,
+            provider
         FROM user
         WHERE user_id = #{userId}
     </select>
@@ -87,7 +88,14 @@
         SELECT
             user_id AS id,
             name,
-            role
+            role,
+            nickname,
+            email,
+            tel,
+            profile_image AS profileImage,
+            user_status AS userStatus,
+            is_premium AS isPremium,
+            provider
         FROM user
         WHERE email = #{email}
     </select>
