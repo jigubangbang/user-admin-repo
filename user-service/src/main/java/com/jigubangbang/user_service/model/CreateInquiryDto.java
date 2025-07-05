@@ -1,5 +1,7 @@
 package com.jigubangbang.user_service.model;
 
+import java.util.List;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -19,5 +21,6 @@ public class CreateInquiryDto {
     @NotNull
     private String category;
 
-    private String attachment;
+    private List<String> attachments;   // S3 URL 리스트
+    private String attachment;          // DB 저장용 문자열
 }

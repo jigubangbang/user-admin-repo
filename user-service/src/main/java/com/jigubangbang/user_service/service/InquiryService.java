@@ -7,7 +7,9 @@ import com.jigubangbang.user_service.model.InquiryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,13 +19,27 @@ public class InquiryService {
 
     // 문의 등록
     public int createInquiry(String userId, CreateInquiryDto dto) {
+        
+        if (dto.getAttachments() != null && !dto.getAttachments().isEmpty()) {
+            String attachmentStr = String.join(",", dto.getAttachments());
+            dto.setAttachment(attachmentStr);
+        }
         inquiryMapper.insertInquiry(userId, dto);
         return dto.getId();
     }
 
     // 사용자 본인의 문의 전체 목록
     public List<InquiryDto> getInquiriesByUser(String userId) {
-        return inquiryMapper.selectInquiriesByUserId(userId);
+        List<InquiryDto> list = inquiryMapper.selectInquiriesByUserId(userId);
+        for (InquiryDto dto : list) {
+            if (dto.getAttachment() != null && !dto.getAttachment().isBlank()) {
+                List<String> attachments = Arrays.stream(dto.getAttachment().split(","))
+                        .map(String::trim)
+                        .collect(Collectors.toList());
+                dto.setAttachments(attachments);
+            }
+        }
+        return list;
     }
 
     // 문의 상세 조회
@@ -32,6 +48,14 @@ public class InquiryService {
         if (inquiry == null || !inquiry.getUserId().equals(userId)) {
             throw new IllegalArgumentException("해당 문의를 조회할 권한이 없습니다.");
         }
+
+        if (inquiry.getAttachment() != null && !inquiry.getAttachment().isBlank()) {
+            List<String> attachments = Arrays.stream(inquiry.getAttachment().split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toList());
+            inquiry.setAttachments(attachments);
+        }
+
         return inquiry;
     }
 
