@@ -41,8 +41,6 @@ public class InquiryController {
             @RequestPart("dto") @Valid CreateInquiryDto dto,
             @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
 
-        System.out.println("인증된 사용자: " + (user != null ? user.getUsername() : "null"));
-
         if (files != null && !files.isEmpty()) {
             List<String> uploadedUrls = new ArrayList<>();
 
@@ -50,7 +48,7 @@ public class InquiryController {
                 if (!file.isEmpty()) {
                     String s3Url = s3Service.uploadFile(file, "inquiry-attachments/");
                     uploadedUrls.add(s3Url);
-                    System.out.println("전달된 파일: " + file.getOriginalFilename());
+                    System.out.println("등록된 파일: " + file.getOriginalFilename());
                     System.out.println("S3 업로드 완료: " + s3Url);
                 }
             }
@@ -60,7 +58,7 @@ public class InquiryController {
                 dto.setAttachment(String.join(",", uploadedUrls));
             }
         } else {
-            System.out.println("첨부된 파일 없음.");
+            System.out.println("첨부된 파일 없음");
         }
 
         if (user == null) {
@@ -95,7 +93,7 @@ public class InquiryController {
                 if (!file.isEmpty()) {
                     String s3Url = s3Service.uploadFile(file, "inquiry-attachments/");
                     uploadedUrls.add(s3Url);
-                    System.out.println("수정 시 업로드된 파일: " + file.getOriginalFilename());
+                    System.out.println("수정 시 등록된 파일: " + file.getOriginalFilename());
                     System.out.println("S3 업로드 완료: " + s3Url);
                 }
             }
