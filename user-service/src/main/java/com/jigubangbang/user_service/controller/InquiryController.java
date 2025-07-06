@@ -42,20 +42,25 @@ public class InquiryController {
             @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
 
         if (files != null && !files.isEmpty()) {
-            List<String> uploadedUrls = new ArrayList<>();
+            List<CreateInquiryDto.AttachmentInfo> attachmentInfos = new ArrayList<>();
 
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
                     String s3Url = s3Service.uploadFile(file, "inquiry-attachments/");
-                    uploadedUrls.add(s3Url);
+
+                    CreateInquiryDto.AttachmentInfo info = new CreateInquiryDto.AttachmentInfo();
+                    info.setOriginalName(file.getOriginalFilename());
+                    info.setUrl(s3Url);
+                    attachmentInfos.add(info);
+
                     System.out.println("등록된 파일: " + file.getOriginalFilename());
                     System.out.println("S3 업로드 완료: " + s3Url);
                 }
             }
 
-            dto.setAttachments(uploadedUrls);
-            if (!uploadedUrls.isEmpty()) {
-                dto.setAttachment(String.join(",", uploadedUrls));
+            dto.setAttachments(attachmentInfos);
+            if (!attachmentInfos.isEmpty()) {
+                dto.setAttachment(convertToJsonString(attachmentInfos));
             }
         } else {
             System.out.println("첨부된 파일 없음");
@@ -88,19 +93,24 @@ public class InquiryController {
             @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
 
         if (files != null && !files.isEmpty()) {
-            List<String> uploadedUrls = new ArrayList<>();
+            List<CreateInquiryDto.AttachmentInfo> attachmentInfos = new ArrayList<>();
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
                     String s3Url = s3Service.uploadFile(file, "inquiry-attachments/");
-                    uploadedUrls.add(s3Url);
+
+                    CreateInquiryDto.AttachmentInfo info = new CreateInquiryDto.AttachmentInfo();
+                    info.setOriginalName(file.getOriginalFilename());
+                    info.setUrl(s3Url);
+                    attachmentInfos.add(info);
+
                     System.out.println("수정 시 등록된 파일: " + file.getOriginalFilename());
                     System.out.println("S3 업로드 완료: " + s3Url);
                 }
             }
 
-            dto.setAttachments(uploadedUrls);
-            if (!uploadedUrls.isEmpty()) {
-                dto.setAttachment(String.join(",", uploadedUrls));
+            dto.setAttachments(attachmentInfos);
+            if (!attachmentInfos.isEmpty()) {
+                dto.setAttachment(convertToJsonString(attachmentInfos));
             }
         }
 
@@ -113,5 +123,36 @@ public class InquiryController {
             @AuthenticationPrincipal AuthDto user) {
         inquiryService.deleteInquiry(id, user.getUsername());
         return ResponseEntity.noContent().build();
+    }
+
+    // 클래스 끝부분에 추가
+    private String convertToJsonString(List<CreateInquiryDto.AttachmentInfo> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < attachments.size(); i++) {
+            CreateInquiryDto.AttachmentInfo info = attachments.get(i);
+            json.append("{")
+                    .append("\"originalName\":\"").append(escapeJson(info.getOriginalName())).append("\",")
+                    .append("\"url\":\"").append(escapeJson(info.getUrl())).append("\"")
+                    .append("}");
+
+            if (i < attachments.size() - 1) {
+                json.append(",");
+            }
+        }
+        json.append("]");
+        return json.toString();
+    }
+
+    private String escapeJson(String str) {
+        if (str == null)
+            return "";
+        return str.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
     }
 }

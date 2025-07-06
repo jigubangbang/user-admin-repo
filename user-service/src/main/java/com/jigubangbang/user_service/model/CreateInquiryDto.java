@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 public class CreateInquiryDto {
     private int id;
-    
+
     @NotBlank
     private String title;
 
@@ -21,6 +21,13 @@ public class CreateInquiryDto {
     @NotNull
     private String category;
 
-    private List<String> attachments;   // S3 URL 리스트
-    private String attachment;          // DB 저장용 문자열
+    private List<AttachmentInfo> attachments;
+    private String attachment; // DB 저장용 JSON 문자열
+
+    @Getter
+    @Setter
+    public static class AttachmentInfo {
+        private String originalName;
+        private String url;
+    }
 }

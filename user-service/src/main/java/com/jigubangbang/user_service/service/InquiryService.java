@@ -7,9 +7,8 @@ import com.jigubangbang.user_service.model.InquiryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,11 +18,6 @@ public class InquiryService {
 
     // 문의 등록
     public int createInquiry(String userId, CreateInquiryDto dto) {
-        
-        if (dto.getAttachments() != null && !dto.getAttachments().isEmpty()) {
-            String attachmentStr = String.join(",", dto.getAttachments());
-            dto.setAttachment(attachmentStr);
-        }
         inquiryMapper.insertInquiry(userId, dto);
         return dto.getId();
     }
@@ -33,10 +27,7 @@ public class InquiryService {
         List<InquiryDto> list = inquiryMapper.selectInquiriesByUserId(userId);
         for (InquiryDto dto : list) {
             if (dto.getAttachment() != null && !dto.getAttachment().isBlank()) {
-                List<String> attachments = Arrays.stream(dto.getAttachment().split(","))
-                        .map(String::trim)
-                        .collect(Collectors.toList());
-                dto.setAttachments(attachments);
+                dto.setAttachments(parseJsonToAttachments(dto.getAttachment()));
             }
         }
         return list;
@@ -50,10 +41,7 @@ public class InquiryService {
         }
 
         if (inquiry.getAttachment() != null && !inquiry.getAttachment().isBlank()) {
-            List<String> attachments = Arrays.stream(inquiry.getAttachment().split(","))
-                    .map(String::trim)
-                    .collect(Collectors.toList());
-            inquiry.setAttachments(attachments);
+            inquiry.setAttachments(parseJsonToAttachments(inquiry.getAttachment()));
         }
 
         return inquiry;
@@ -73,5 +61,61 @@ public class InquiryService {
         if (deleted == 0) {
             throw new IllegalArgumentException("문의 삭제에 실패했습니다.");
         }
+    }
+
+    // JSON 문자열을 AttachmentInfo 리스트로 파싱
+    private List<InquiryDto.AttachmentInfo> parseJsonToAttachments(String jsonString) {
+        List<InquiryDto.AttachmentInfo> attachments = new ArrayList<>();
+        if (jsonString == null || jsonString.trim().isEmpty()) {
+            return attachments;
+        }
+
+        try {
+            String content = jsonString.trim();
+            if (content.startsWith("[") && content.endsWith("]")) {
+                content = content.substring(1, content.length() - 1);
+            }
+
+            if (content.trim().isEmpty()) {
+                return attachments;
+            }
+
+            String[] objects = content.split("\\},\\{");
+            for (int i = 0; i < objects.length; i++) {
+                String obj = objects[i];
+
+                if (i == 0 && obj.startsWith("{")) {
+                    obj = obj.substring(1);
+                }
+                if (i == objects.length - 1 && obj.endsWith("}")) {
+                    obj = obj.substring(0, obj.length() - 1);
+                }
+
+                InquiryDto.AttachmentInfo info = new InquiryDto.AttachmentInfo();
+
+                // originalName 추출
+                int nameStart = obj.indexOf("\"originalName\":\"") + 16;
+                int nameEnd = obj.indexOf("\",\"url\":");
+                if (nameStart > 15 && nameEnd > nameStart) {
+                    String originalName = obj.substring(nameStart, nameEnd);
+                    info.setOriginalName(originalName);
+                }
+
+                // url 추출
+                int urlStart = obj.indexOf("\"url\":\"") + 7;
+                int urlEnd = obj.lastIndexOf("\"");
+                if (urlStart > 6 && urlEnd > urlStart) {
+                    String url = obj.substring(urlStart, urlEnd);
+                    info.setUrl(url);
+                }
+
+                attachments.add(info);
+            }
+        } catch (Exception e) {
+            System.err.println("JSON 파싱 오류: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return attachments;
     }
 }
