@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jigubangbang.user_service.mapper.ReportMapper">
+    <!-- 신고 등록 -->
+    <insert id="insertReport" parameterType="com.jigubangbang.user_service.model.CreateReportDto">
+        INSERT INTO report (
+            reporter_id,
+            target_user_id,
+            content_type,
+            content_subtype,
+            content_id,
+            reason_code,
+            reason_text
+        )
+        VALUES (
+            #{reporterId},
+            #{targetUserId},
+            #{contentType},
+            #{contentSubtype},
+            #{contentId},
+            #{reasonCode},
+            #{reasonText}
+        )
+    </insert>
+</mapper>
