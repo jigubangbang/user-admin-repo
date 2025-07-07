@@ -150,6 +150,11 @@ public class AuthService {
         // 2. 기존 사용자 조회 (이메일 기준)
         UserDto existingUser = userMapper.findByEmail(socialUser.getEmail());
 
+        // 기존 이메일이 일반 가입자일 경우 소셜 로그인 차단
+        if (existingUser != null && existingUser.getProvider() == null) {
+            throw new UserStatusException("일반 회원으로 가입된 이메일입니다\n일반 로그인을 이용해 주세요");
+        }
+
         // 3. 신규 사용자 등록
         if (existingUser == null) {
             if (userMapper.existsByEmail(socialUser.getEmail())) {
