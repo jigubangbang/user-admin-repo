@@ -21,6 +21,8 @@ public class AuthDto implements UserDetails {
     private String password;    // 암호화된 비밀번호
     private String role;        // ROLE_USER, ROLE_ADMIN
     private String status;      // ACTIVE, BANNED, WITHDRAWN
+    private int blindCount;
+    private int lastBlindCount; 
     private LocalDateTime bannedUntil;
 
     @Override

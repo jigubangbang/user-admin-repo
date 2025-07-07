@@ -66,7 +66,14 @@ public interface UserMapper {
             @Param("reasonCode") String reasonCode,
             @Param("reasonText") String reasonText,
             @Param("withdrawalType") String withdrawalType);
-    
+
     // 회원 상태 WITHDRAWN으로 변경
     int updateUserAsWithdrawn(@Param("userId") String userId);
+
+    // 상태 및 정지 기간 설정
+    int updateStatusAndBannedUntil(@Param("userId") String userId, @Param("status") String status, @Param("bannedUntil") LocalDateTime bannedUntil);
+
+    // 마지막 블라인드 횟수 저장
+    int updateLastBlindCount(@Param("userId") String userId, @Param("lastBlindCount") int lastBlindCount);
+
 }

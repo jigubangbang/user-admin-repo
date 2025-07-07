@@ -42,27 +42,60 @@ public class AuthService {
         // 사용자 인증 전 상태 검사
         AuthDto authUser = userMapper.findAuthById(request.getUserId());
         if (authUser == null) {
-            throw new UserStatusException("존재하지 않는 계정입니다.");
+            throw new UserStatusException("존재하지 않는 계정입니다");
         }
 
-        switch (authUser.getStatus()) {
-            case "WITHDRAWN":
+        // 일반 탈퇴
+        if ("WITHDRAWN".equals(authUser.getStatus())) {
+            if (authUser.getBlindCount() >= 5 && authUser.getBlindCount() == authUser.getLastBlindCount()) {
+                throw new UserStatusException("블라인드 누적으로 탈퇴 처리된 계정입니다");
+            } else {
                 throw new UserStatusException("탈퇴된 계정입니다");
-            case "BANNED":
-                if (authUser.getBannedUntil() != null &&
-                        authUser.getBannedUntil().isAfter(LocalDateTime.now())) {
-                    long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), authUser.getBannedUntil());
-                    throw new UserStatusException("정지된 계정입니다. 정지 해제: "
-                            + authUser.getBannedUntil().toLocalDate() + " (D-" + daysLeft + ")");
-                } else {
-                    // 정지 기간 해제 시 ACTIVE
-                    userMapper.restoreUserToActive(request.getUserId());
-                }
-                break;
-            case "ACTIVE":
-                break;
-            default:
-                throw new UserStatusException("알 수 없는 계정 상태입니다");
+            }
+        }
+
+        // 정지 기간 만료 → ACTIVE 복구
+        if ("BANNED".equals(authUser.getStatus())
+                && authUser.getBannedUntil() != null
+                && authUser.getBannedUntil().isBefore(LocalDateTime.now())) {
+
+            userMapper.restoreUserToActive(authUser.getId());
+            authUser = userMapper.findAuthById(authUser.getId());
+        }
+
+        // 블라인드 누적 탈퇴 (5회 이상, 이전 처리 이력보다 많을 때)
+        if ("ACTIVE".equals(authUser.getStatus())
+                && authUser.getBlindCount() >= 5
+                && authUser.getBlindCount() > authUser.getLastBlindCount()) {
+
+            userMapper.updateUserAsWithdrawn(authUser.getId());
+            userMapper.updateLastBlindCount(authUser.getId(), authUser.getBlindCount());
+            throw new UserStatusException("블라인드 누적으로 탈퇴 처리된 계정입니다");
+        }
+
+        // 블라인드 누적 정지 (3회 이상, 이전 처리 이력보다 많을 때)
+        if ((authUser.getStatus().equals("ACTIVE") || authUser.getStatus().equals("BANNED"))
+                && authUser.getBlindCount() >= 3
+                && authUser.getBlindCount() > authUser.getLastBlindCount()) {
+
+            LocalDateTime until = LocalDateTime.now().plusDays(7);
+            userMapper.updateStatusAndBannedUntil(authUser.getId(), "BANNED", until);
+            userMapper.updateLastBlindCount(authUser.getId(), authUser.getBlindCount());
+
+            long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), until);
+            throw new UserStatusException("블라인드 누적으로 정지된 계정입니다\n정지 해제: "
+                    + until.toLocalDate() + " (D-" + daysLeft + ")");
+        }
+
+        // 일반 정지
+        if ("BANNED".equals(authUser.getStatus())) {
+            if (authUser.getBannedUntil() == null) {
+                throw new UserStatusException("정지된 계정입니다");
+            } else {
+                long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), authUser.getBannedUntil());
+                throw new UserStatusException("블라인드 누적으로 정지된 계정입니다\n정지 해제: "
+                        + authUser.getBannedUntil().toLocalDate() + " (D-" + daysLeft + ")");
+            }
         }
 
         // Spring Security 인증 처리
@@ -73,7 +106,7 @@ public class AuthService {
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (Exception e) {
-            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다");
         }
 
         // 사용자 정보 조회 및 JWT 토큰 생성

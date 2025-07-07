@@ -11,7 +11,9 @@
             password,
             role,
             user_status AS status,
-            banned_until
+            banned_until AS bannedUntil,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount 
         FROM user
         WHERE user_id = #{userId}
     </select>
@@ -28,7 +30,10 @@
             profile_image AS profileImage,
             user_status AS userStatus,
             is_premium AS isPremium,
-            provider
+            provider,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount,
+            banned_until AS bannedUntil
         FROM user
         WHERE user_id = #{userId}
     </select>
@@ -95,7 +100,10 @@
             profile_image AS profileImage,
             user_status AS userStatus,
             is_premium AS isPremium,
-            provider
+            provider,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount,
+            banned_until AS bannedUntil
         FROM user
         WHERE email = #{email}
     </select>
@@ -193,6 +201,23 @@
    <update id="updateUserAsWithdrawn">
         UPDATE user
         SET user_status = 'WITHDRAWN',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 상태 및 정지 기간 설정 -->
+    <update id="updateStatusAndBannedUntil">
+        UPDATE user
+        SET user_status = #{status},
+            banned_until = #{bannedUntil},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 마지막 블라인드 횟수 저장 -->
+    <update id="updateLastBlindCount">
+        UPDATE user
+        SET last_blind_count = #{lastBlindCount},
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = #{userId}
     </update>
