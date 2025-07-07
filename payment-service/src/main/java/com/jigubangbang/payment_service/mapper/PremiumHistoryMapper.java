@@ -41,4 +41,12 @@ public interface PremiumHistoryMapper {
      * @return 구독 만료 예정인 사용자 목록
      */
     List<PremiumHistoryDto> findExpiringSubscriptions(LocalDateTime expirationDate);
+
+    /**
+     * 특정 사용자의 가장 최근 프리미엄 구독 내역을 조회합니다.
+     * 활성/비활성 여부와 관계없이 가장 최근의 기록을 반환합니다.
+     * @param userId 조회할 사용자 ID
+     * @return 가장 최근의 구독 정보 (Optional)
+     */
+    Optional<PremiumHistoryDto> findLatestByUserId(String userId);
 }

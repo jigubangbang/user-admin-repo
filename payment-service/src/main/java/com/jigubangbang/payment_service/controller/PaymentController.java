@@ -1,45 +1,97 @@
 package com.jigubangbang.payment_service.controller;
 
 import com.jigubangbang.payment_service.model.PaymentHistoryDto;
+import com.jigubangbang.payment_service.model.PremiumHistoryDto;
 import com.jigubangbang.payment_service.service.PaymentService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
 @RestController
-// =====👇 API 게이트웨이의 StripPrefix 규칙에 맞춰 경로를 수정합니다. =====
 @RequestMapping("/payment")
-// ====================================================================
 @RequiredArgsConstructor
 public class PaymentController {
 
     private final PaymentService paymentService;
 
-    /**
-     * 결제 정보를 사전에 등록하고, 결제에 필요한 merchant_uid를 반환합니다.
-     */
-    @PostMapping("/prepare")
-    public ResponseEntity<Map<String, String>> preparePayment(@RequestBody PaymentHistoryDto request) {
-        String merchantUid = paymentService.preparePayment(request);
-        return ResponseEntity.ok(Map.of("merchant_uid", merchantUid));
+    @PostMapping("/premium/subscribe")
+    public ResponseEntity<Map<String, Object>> subscribePremium(@RequestHeader("User-Id") String userId) {
+        final int PREMIUM_AMOUNT = 990; // 프리미엄 구독료 고정
+
+        try {
+            // 서비스 레이어를 호출하여 결제 준비
+            String merchantUid = paymentService.prepareNewSubscription(userId, PREMIUM_AMOUNT);
+
+            // 프론트엔드에 전달할 정보 구성
+            Map<String, Object> response = new HashMap<>();
+            response.put("merchant_uid", merchantUid);
+            response.put("amount", PREMIUM_AMOUNT);
+            response.put("userId", userId); // 사용자 ID 추가
+
+            log.info("프리미엄 구독 신청 처리 완료: userId={}, merchantUid={}", userId, merchantUid);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("프리미엄 구독 처리 중 오류 발생: userId={}", userId, e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "결제 준비 중 오류가 발생했습니다."));
+        }
     }
 
-    /**
-     * 포트원 결제 웹훅(Webhook) 수신 엔드포인트
-     */
+    @GetMapping("/premium/status")
+    public ResponseEntity<PremiumHistoryDto> getPremiumStatus(@RequestHeader("User-Id") String userId) {
+        try {
+            PremiumHistoryDto subscriptionStatus = paymentService.getLatestPremiumStatusForUser(userId);
+            log.info("구독 상태 조회 완료: userId={}, isActive={}", userId, subscriptionStatus.getIsActive());
+            return ResponseEntity.ok(subscriptionStatus);
+        } catch (Exception e) {
+            log.error("구독 상태 조회 중 오류 발생: userId={}", userId, e);
+            // 오류 발생 시에도 빈 DTO를 반환하여 프론트엔드에서 null 체크를 피하도록 함
+            return ResponseEntity.internalServerError().body(new PremiumHistoryDto());
+        }
+    }
+
+    @DeleteMapping("/premium/cancel")
+    public ResponseEntity<Void> cancelPremiumSubscription(@RequestHeader("User-Id") String userId) {
+        try {
+            paymentService.requestSubscriptionCancellation(userId);
+            log.info("프리미엄 구독 해지 요청 처리 완료: userId={}", userId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("구독 해지 요청 처리 중 오류 발생: userId={}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @PostMapping("/webhook/iamport")
     public ResponseEntity<Void> portoneWebhook(@RequestBody PortoneWebhookPayload payload) {
         log.info("포트원 웹훅 수신: {}", payload);
         try {
-            paymentService.processWebhook(payload.getImp_uid(), payload.getMerchant_uid());
+            // 1. 서비스의 트랜잭션 메소드 호출
+            Map<String, Object> result = paymentService.processWebhook(payload.getImp_uid(), payload.getMerchant_uid(), payload.getStatus());
+
+            // 2. 트랜잭션이 끝난 후, 별도의 외부 서비스 호출 실행
+            if (result != null) {
+                PaymentHistoryDto payment = (PaymentHistoryDto) result.get("payment");
+                String customerUid = (String) result.get("customerUid");
+
+                if (payment != null && payment.getUserId() != null && customerUid != null) {
+                    try {
+                        // 트랜잭션이 완전히 분리된 상태에서 user-service 호출
+                        paymentService.updateUserPremiumExternal(payment.getUserId(), customerUid);
+                        log.info("프리미엄 상태 및 빌링키 외부 업데이트 성공: userId={}", payment.getUserId());
+                    } catch (Exception ex) {
+                        log.error("user-service 호출 중 오류 발생 (트랜잭션 외부)", ex);
+                        // 여기서의 실패는 웹훅의 성공 응답에 영향을 주지 않도록 처리 (예: 재시도 큐에 적재)
+                    }
+                }
+            }
+
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("웹훅 처리 중 오류 발생: imp_uid={}", payload.getImp_uid(), e);
@@ -47,9 +99,6 @@ public class PaymentController {
         }
     }
 
-    /**
-     * 자동 결제 로직을 수동으로 실행하기 위한 엔드포인트 (내부 테스트용)
-     */
     @PostMapping("/internal/auto-payment")
     public ResponseEntity<String> triggerAutoPayment() {
         try {
@@ -62,9 +111,6 @@ public class PaymentController {
         }
     }
 
-    /**
-     * 포트원 웹훅 요청의 Body를 받기 위한 DTO 클래스
-     */
     @Data
     static class PortoneWebhookPayload {
         private String imp_uid;

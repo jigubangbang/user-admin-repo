@@ -26,4 +26,8 @@ public class PortoneRecurringPaymentRequest {
 
     // 상품명
     private String name;
+
+    // 웹훅(결과 통보) URL
+    @JsonProperty("notice_url")
+    private String noticeUrl;
 }

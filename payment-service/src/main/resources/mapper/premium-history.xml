@@ -52,7 +52,24 @@
         FROM
             premium_log
         WHERE
-            is_active = TRUE AND end_date &lt; #{expirationDate}
+            is_active = TRUE AND DATE(end_date) = DATE(#{expirationDate})
+    </select>
+
+    <!-- findLatestByUserId 메소드에 대한 SQL 쿼리 -->
+    <select id="findLatestByUserId" parameterType="string" resultType="com.jigubangbang.payment_service.model.PremiumHistoryDto">
+        SELECT
+            id,
+            user_id,
+            start_date,
+            end_date,
+            is_active
+        FROM
+            premium_log
+        WHERE
+            user_id = #{userId}
+        ORDER BY
+            start_date DESC
+        LIMIT 1
     </select>
 
 </mapper>

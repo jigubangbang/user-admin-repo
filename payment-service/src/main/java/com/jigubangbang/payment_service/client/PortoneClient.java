@@ -96,7 +96,14 @@ public class PortoneClient {
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(request)
                     .retrieve()
+                    .onStatus(status -> status.isError(), clientResponse -> 
+                        clientResponse.bodyToMono(String.class).flatMap(body -> {
+                            log.error("Portone API 에러 응답: status={}, body={}", clientResponse.statusCode(), body);
+                            return Mono.error(new RuntimeException("Portone API 에러: " + body));
+                        })
+                    )
                     .bodyToMono(PortonePaymentResponse.class)
+                    .doOnSuccess(response -> log.info("Portone API 성공 응답: {}", response))
                     .block();
 
             log.info("자동 결제 요청 응답 수신: merchant_uid={}", request.getMerchantUid());
