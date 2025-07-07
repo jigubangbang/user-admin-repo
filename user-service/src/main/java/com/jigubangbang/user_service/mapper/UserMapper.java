@@ -36,6 +36,9 @@ public interface UserMapper {
     // 이메일로 사용자 조회 (소셜 로그인)
     UserDto findByEmail(String email);
 
+    // 사용자 상태 확인 (소셜 로그인)
+    AuthDto findAuthByEmail(String email);
+
     // 아이디 찾기
     FindIdResponseDto findByNameAndEmail(String name, String email);
 

@@ -108,6 +108,20 @@
         WHERE email = #{email}
     </select>
 
+    <!-- 사용자 상태 확인 (소셜 로그인) -->
+    <select id="findAuthByEmail" resultType="com.jigubangbang.user_service.model.AuthDto">
+        SELECT
+            user_id AS id,
+            password,
+            role,
+            user_status AS status,
+            banned_until AS bannedUntil,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount
+        FROM user
+        WHERE email = #{email}
+    </select>
+
     <!-- 이름 + 이메일로 사용자 조회 (아이디 찾기) -->
     <select id="findByNameAndEmail" resultType="com.jigubangbang.user_service.model.FindIdResponseDto">
         SELECT
