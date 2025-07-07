@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -19,6 +21,7 @@ public class AuthDto implements UserDetails {
     private String password;    // 암호화된 비밀번호
     private String role;        // ROLE_USER, ROLE_ADMIN
     private String status;      // ACTIVE, BANNED, WITHDRAWN
+    private LocalDateTime bannedUntil;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

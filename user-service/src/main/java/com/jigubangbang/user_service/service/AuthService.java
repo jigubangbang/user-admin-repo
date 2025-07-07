@@ -1,6 +1,12 @@
 package com.jigubangbang.user_service.service;
 
+import com.jigubangbang.user_service.exception.UserStatusException;
 import com.jigubangbang.user_service.mapper.UserMapper;
+import com.jigubangbang.user_service.model.AuthDto;
+import com.jigubangbang.user_service.model.FindIdRequestDto;
+import com.jigubangbang.user_service.model.FindIdResponseDto;
+import com.jigubangbang.user_service.model.FindPwdRequestDto;
+import com.jigubangbang.user_service.model.FindPwdResponseDto;
 import com.jigubangbang.user_service.model.LoginRequestDto;
 import com.jigubangbang.user_service.model.LoginResponseDto;
 import com.jigubangbang.user_service.model.RegisterRequestDto;
@@ -8,6 +14,13 @@ import com.jigubangbang.user_service.model.SocialUserDto;
 import com.jigubangbang.user_service.model.UserDto;
 import com.jigubangbang.user_service.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,30 +31,56 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final SocialOAuthService socialOAuthService;
+    private final EmailService emailService;
 
-    public LoginResponseDto login(LoginRequestDto request) {
+    public LoginResponseDto login(LoginRequestDto request) throws UserStatusException {
+        // 사용자 인증 전 상태 검사
+        AuthDto authUser = userMapper.findAuthById(request.getUserId());
+        if (authUser == null) {
+            throw new UserStatusException("존재하지 않는 계정입니다.");
+        }
 
-        // 1. 사용자 인증 시도
-        UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(request.getUserId(), request.getPassword());
+        switch (authUser.getStatus()) {
+            case "WITHDRAWN":
+                throw new UserStatusException("탈퇴된 계정입니다");
+            case "BANNED":
+                if (authUser.getBannedUntil() != null &&
+                        authUser.getBannedUntil().isAfter(LocalDateTime.now())) {
+                    long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), authUser.getBannedUntil());
+                    throw new UserStatusException("정지된 계정입니다. 정지 해제: "
+                            + authUser.getBannedUntil().toLocalDate() + " (D-" + daysLeft + ")");
+                } else {
+                    // 정지 기간 해제 시 ACTIVE
+                    userMapper.restoreUserToActive(request.getUserId());
+                }
+                break;
+            case "ACTIVE":
+                break;
+            default:
+                throw new UserStatusException("알 수 없는 계정 상태입니다");
+        }
 
-        Authentication authentication = authenticationManager.authenticate(authenticationToken);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        // Spring Security 인증 처리
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                request.getUserId(), request.getPassword());
 
-        // 2. 사용자 정보 조회
+        try {
+            Authentication authentication = authenticationManager.authenticate(authenticationToken);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 사용자 정보 조회 및 JWT 토큰 생성
         UserDto user = userMapper.findUserById(request.getUserId());
-
-        // 3. JWT 토큰 생성
         String accessToken = jwtTokenProvider.generateAccessToken(user);
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
-        // 4. 응답 DTO 생성 (정적 팩토리 메서드 사용)
         return LoginResponseDto.of(accessToken, refreshToken, user);
     }
 
@@ -72,11 +111,11 @@ public class AuthService {
     }
 
     public LoginResponseDto socialLogin(String code, String provider) {
-    // 1. 소셜 플랫폼에서 사용자 정보 조회
-    SocialUserDto socialUser = socialOAuthService.getUserInfo(code, provider);
+        // 1. 소셜 플랫폼에서 사용자 정보 조회
+        SocialUserDto socialUser = socialOAuthService.getUserInfo(code, provider);
 
-    // 2. 기존 사용자 조회 (이메일 기준)
-    UserDto existingUser = userMapper.findByEmail(socialUser.getEmail());
+        // 2. 기존 사용자 조회 (이메일 기준)
+        UserDto existingUser = userMapper.findByEmail(socialUser.getEmail());
 
         if (existingUser == null) {
             if (userMapper.existsByEmail(socialUser.getEmail())) {
@@ -96,7 +135,7 @@ public class AuthService {
                     newUser.setTel(socialUser.getTel());
                     newUser.setAgreedRequired(true);
                     newUser.setAgreedOptional(false);
-                    newUser.setProvider(socialUser.getProvider()); 
+                    newUser.setProvider(socialUser.getProvider());
                     newUser.setProviderId(socialUser.getProviderId());
 
                     userMapper.insertUser(newUser);
@@ -114,8 +153,81 @@ public class AuthService {
         return LoginResponseDto.of(accessToken, refreshToken, existingUser);
     }
 
-
     private String generateRandomUserId() {
         return "user" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    public LoginResponseDto refreshAccessToken(String tokenHeader) {
+        // 순수 토큰만 추출
+        String token = tokenHeader.replace("Bearer ", "");
+
+        // 유효성 검사: refresh token인지 확인
+        if (!jwtTokenProvider.validateToken(token) ||
+                !"refresh".equals(jwtTokenProvider.getTokenType(token))) {
+            throw new IllegalArgumentException("유효하지 않은 RefreshToken입니다.");
+        }
+
+        // 토큰에서 사용자 ID 추출
+        String userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        // 사용자 정보 조회
+        UserDto user = userMapper.findUserById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("사용자 정보를 찾을 수 없습니다.");
+        }
+
+        // 새 AccessToken 발급 (RefreshToken은 그대로 재사용)
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user);
+
+        return LoginResponseDto.of(newAccessToken, token, user); // 기존 RefreshToken 그대로
+    }
+
+    public ResponseEntity<?> findUserId(FindIdRequestDto dto) {
+        FindIdResponseDto result = userMapper.findByNameAndEmail(dto.getName(), dto.getEmail());
+
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        if (result.getProvider() != null) {
+            return ResponseEntity.ok(Map.of("isSocial", true));
+        }
+        emailService.sendFoundUserId(dto.getEmail(), result.getUserId());
+        return ResponseEntity.ok(Map.of("userId", result.getUserId()));
+    }
+
+    public ResponseEntity<?> findUserPassword(FindPwdRequestDto dto) {
+        FindPwdResponseDto result = userMapper.findByUserIdNameEmail(
+                dto.getUserId(), dto.getName(), dto.getEmail());
+
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        if (result.getProvider() != null) {
+            return ResponseEntity.ok(Map.of("isSocial", true));
+        }
+
+        if (result.getTempPwdAt() != null &&
+                result.getTempPwdAt().isAfter(java.time.LocalDateTime.now().minusMinutes(30))) {
+            result.setLimited(true);
+            return ResponseEntity.ok(result);
+        }
+
+        // 임시 비밀번호 생성
+        String tempPassword = generateTempPassword();
+        String encodedPassword = passwordEncoder.encode(tempPassword);
+
+        // 비밀번호 및 발급시각 갱신
+        userMapper.updatePasswordAndTempPwdAt(result.getUserId(), encodedPassword, java.time.LocalDateTime.now());
+
+        // 이메일 발송
+        emailService.sendTempPassword(dto.getEmail(), tempPassword);
+
+        return ResponseEntity.ok(Map.of("issued", true));
+    }
+
+    private String generateTempPassword() {
+        return java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 10);
     }
 }
