@@ -42,7 +42,7 @@ public class AuthService {
         // 사용자 인증 전 상태 검사
         AuthDto authUser = userMapper.findAuthById(request.getUserId());
         if (authUser == null) {
-            throw new UserStatusException("존재하지 않는 계정입니다");
+            throw new UserStatusException("아이디 또는 비밀번호가 일치하지 않습니다");
         }
 
         // 일반 탈퇴
