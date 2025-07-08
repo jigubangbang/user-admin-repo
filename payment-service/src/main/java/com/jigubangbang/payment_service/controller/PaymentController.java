@@ -1,16 +1,28 @@
 package com.jigubangbang.payment_service.controller;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jigubangbang.payment_service.model.PaymentMethodChangeRequestDto;
+import com.jigubangbang.payment_service.model.PremiumStatusResponseDto;
 import com.jigubangbang.payment_service.model.PaymentHistoryDto;
 import com.jigubangbang.payment_service.model.PremiumHistoryDto;
+import com.jigubangbang.payment_service.model.RefundRequestDto;
 import com.jigubangbang.payment_service.service.PaymentService;
+
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -43,16 +55,30 @@ public class PaymentController {
         }
     }
 
-    @GetMapping("/premium/status")
-    public ResponseEntity<PremiumHistoryDto> getPremiumStatus(@RequestHeader("User-Id") String userId) {
+    @PostMapping("/premium/change-method")
+    public ResponseEntity<Void> changePaymentMethod(
+            @RequestHeader("User-Id") String userId,
+            @RequestBody PaymentMethodChangeRequestDto requestDto) {
         try {
-            PremiumHistoryDto subscriptionStatus = paymentService.getLatestPremiumStatusForUser(userId);
-            log.info("구독 상태 조회 완료: userId={}, isActive={}", userId, subscriptionStatus.getIsActive());
+            paymentService.changePaymentMethod(userId, requestDto.getImpUid());
+            log.info("결제 수단 변경 성공: userId={}, impUid={}", userId, requestDto.getImpUid());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("결제 수단 변경 처리 중 오류 발생: userId={}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/premium/status")
+    public ResponseEntity<PremiumStatusResponseDto> getPremiumStatus(@RequestHeader("User-Id") String userId) {
+        try {
+            PremiumStatusResponseDto subscriptionStatus = paymentService.getLatestPremiumStatusForUser(userId);
+            log.info("구독 상태 조회 완료: userId={}, isActive={}", userId, subscriptionStatus.getPremiumHistory().getIsActive());
             return ResponseEntity.ok(subscriptionStatus);
         } catch (Exception e) {
             log.error("구독 상태 조회 중 오류 발생: userId={}", userId, e);
             // 오류 발생 시에도 빈 DTO를 반환하여 프론트엔드에서 null 체크를 피하도록 함
-            return ResponseEntity.internalServerError().body(new PremiumHistoryDto());
+            return ResponseEntity.internalServerError().body(new PremiumStatusResponseDto());
         }
     }
 
@@ -99,6 +125,20 @@ public class PaymentController {
         }
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<List<PaymentHistoryDto>> getPaymentHistory(@RequestHeader("User-Id") String userId) {
+        try {
+            List<PaymentHistoryDto> history = paymentService.getPaymentHistoryByUserId(userId);
+            if (history.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            log.error("결제 내역 조회 중 오류 발생: userId={}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @PostMapping("/internal/auto-payment")
     public ResponseEntity<String> triggerAutoPayment() {
         try {
@@ -116,5 +156,22 @@ public class PaymentController {
         private String imp_uid;
         private String merchant_uid;
         private String status;
+        private String pay_method; // 결제 수단 추가
+        private String card_name; // 카드사 추가
+        private String card_number; // 마스킹된 카드 번호 추가
+    }
+
+    @PostMapping("/refund/request")
+    public ResponseEntity<Map<String, String>> refundRequest(
+            @RequestHeader("User-Id") String userId,
+            @RequestBody RefundRequestDto requestDto) {
+        try {
+            paymentService.requestRefund(userId, requestDto.getMerchantUid());
+            log.info("환불 요청 성공: userId={}, merchantUid={}", userId, requestDto.getMerchantUid());
+            return ResponseEntity.ok(Map.of("message", "환불 요청이 정상적으로 처리되었습니다."));
+        } catch (Exception e) {
+            log.error("환불 요청 처리 중 오류 발생: userId={}, merchantUid={}", userId, requestDto.getMerchantUid(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 }

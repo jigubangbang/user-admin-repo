@@ -3,6 +3,7 @@ package com.jigubangbang.payment_service.mapper;
 import com.jigubangbang.payment_service.model.PaymentHistoryDto;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -10,6 +11,13 @@ import java.util.Optional;
  */
 @Mapper
 public interface PaymentHistoryMapper {
+
+    /**
+     * 특정 사용자의 모든 결제 내역을 조회합니다.
+     * @param userId 사용자 ID
+     * @return 결제 내역 목록
+     */
+    List<PaymentHistoryDto> findByUserId(String userId);
 
     /**
      * 결제 내역을 저장합니다.

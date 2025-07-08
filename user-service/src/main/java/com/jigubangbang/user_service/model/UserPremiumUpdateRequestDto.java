@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 @Builder
 public class UserPremiumUpdateRequestDto {
-    private Boolean premium;
+    private Boolean isPremium;
     private String customerUid;
 }

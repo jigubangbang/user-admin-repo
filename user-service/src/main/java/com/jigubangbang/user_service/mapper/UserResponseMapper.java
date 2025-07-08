@@ -1,10 +1,11 @@
 package com.jigubangbang.user_service.mapper;
 
-import com.jigubangbang.user_service.model.UserResponseDto;
+import java.util.Optional;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.util.Optional;
+import com.jigubangbang.user_service.model.UserResponseDto;
 
 @Mapper
 public interface UserResponseMapper {

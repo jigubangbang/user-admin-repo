@@ -114,4 +114,61 @@ public class PortoneClient {
             throw new RuntimeException("자동 결제 요청 중 오류가 발생했습니다.", e);
         }
     }
+
+    /**
+     * 결제를 환불(취소)합니다.
+     * @param refundPayload 환불에 필요한 정보 (imp_uid 또는 merchant_uid 등)
+     * @param accessToken 인증을 위한 Access Token
+     */
+    public void requestRefund(Map<String, String> refundPayload, String accessToken) {
+        log.info("Portone 환불 요청 시작: payload={}", refundPayload);
+        try {
+            webClient.post()
+                    .uri("/payments/cancel")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(refundPayload)
+                    .retrieve()
+                    .onStatus(status -> status.isError(), clientResponse ->
+                        clientResponse.bodyToMono(String.class).flatMap(body -> {
+                            log.error("Portone 환불 API 에러 응답: status={}, body={}", clientResponse.statusCode(), body);
+                            return Mono.error(new RuntimeException("Portone 환불 API 에러: " + body));
+                        })
+                    )
+                    .bodyToMono(Void.class) // 환불 성공 시 특별한 응답 본문이 없으므로 Void로 처리
+                    .block();
+
+            log.info("Portone 환불 요청 성공: payload={}", refundPayload);
+
+        } catch (Exception e) {
+            log.error("Portone 환불 요청 중 예외 발생: payload={}", refundPayload, e);
+            throw new RuntimeException("Portone 환불 요청 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    /**
+     * customer_uid(빌링키)를 사용하여 등록된 결제 수단 정보를 조회합니다.
+     * @param customerUid 조회할 빌링키
+     * @param accessToken 인증을 위한 Access Token
+     * @return 조회된 결제 수단 정보 객체
+     */
+    public PortonePaymentResponse.PaymentInfo getBillingKeyInfo(String customerUid, String accessToken) {
+        log.info("Portone 빌링키 정보 조회 시작: customer_uid={}", customerUid);
+        try {
+            // API 응답 구조가 일반 결제 조회와 동일하여 PortonePaymentResponse를 재사용합니다.
+            PortonePaymentResponse paymentResponse = webClient.get()
+                    .uri("/subscribe/customers/" + customerUid)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .bodyToMono(PortonePaymentResponse.class)
+                    .block();
+
+            log.info("Portone 빌링키 정보 조회 성공: customer_uid={}", customerUid);
+            return Objects.requireNonNull(paymentResponse).getResponse();
+
+        } catch (Exception e) {
+            log.error("Portone 빌링키 정보 조회 중 예외 발생: customer_uid={}", customerUid, e);
+            throw new RuntimeException("빌링키 정보 조회 중 오류가 발생했습니다.", e);
+        }
+    }
 }

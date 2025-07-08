@@ -29,7 +29,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/", "/health-check", "/actuator/**").permitAll()
+                .requestMatchers("/auth/**", "/", "/health-check", "/actuator/**", "/user/internal/**").permitAll()
                 .anyRequest().authenticated()  
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

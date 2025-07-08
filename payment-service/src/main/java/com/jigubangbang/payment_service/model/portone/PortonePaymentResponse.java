@@ -32,5 +32,14 @@ public class PortonePaymentResponse {
 
         @JsonProperty("customer_uid")
         private String customerUid; // 빌링키 (자동결제용)
+
+        @JsonProperty("pay_method")
+        private String payMethod; // 결제 수단
+
+        @JsonProperty("card_name")
+        private String cardName; // 카드사
+
+        @JsonProperty("card_number")
+        private String cardNumber; // 마스킹된 카드 번호
     }
 }

@@ -21,4 +21,7 @@ public class PaymentHistoryDto {
     private String payStatus;       // 결제 상태 ('PAID', 'CANCELLED')
     private LocalDateTime paidAt;   // 결제 시각
     private LocalDateTime cancelledAt; // 환불 처리 시각
+    private String payMethod; // 결제 수단 추가
+    private String cardName; // 카드사 추가
+    private String cardNumberMasked; // 마스킹된 카드 번호 추가
 }

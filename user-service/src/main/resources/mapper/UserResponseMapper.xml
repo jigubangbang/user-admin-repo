@@ -20,11 +20,14 @@
 
     <update id="updatePremiumInfo">
         UPDATE user
-        SET
-            customer_uid = #{customerUid}
-            <if test="premium != null">
-                , is_premium = #{premium}
+        <set>
+            <if test="customerUid != null">
+                customer_uid = #{customerUid},
             </if>
+            <if test="premium != null">
+                is_premium = #{premium},
+            </if>
+        </set>
         WHERE
             user_id = #{userId}
     </update>
