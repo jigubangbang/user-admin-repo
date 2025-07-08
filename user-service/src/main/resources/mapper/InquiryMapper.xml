@@ -4,7 +4,6 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.jigubangbang.user_service.mapper.InquiryMapper">
-
     <!-- 1:1 문의 등록 -->
     <insert id="insertInquiry" useGeneratedKeys="true" keyProperty="dto.id">
         INSERT INTO inquiry (
@@ -75,5 +74,4 @@
         DELETE FROM inquiry
         WHERE id = #{id} AND user_id = #{userId}
     </delete>
-
 </mapper>

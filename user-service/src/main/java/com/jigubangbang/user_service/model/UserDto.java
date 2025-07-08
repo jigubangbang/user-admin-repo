@@ -23,4 +23,7 @@ public class UserDto {
     private boolean isPremium;
     private String provider;
     private LocalDateTime nicknameUnlockAt;
+    private int blindCount;
+    private int lastBlindCount; 
+    private LocalDateTime bannedUntil; 
 }

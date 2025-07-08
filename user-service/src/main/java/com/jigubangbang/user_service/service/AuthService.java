@@ -42,27 +42,60 @@ public class AuthService {
         // 사용자 인증 전 상태 검사
         AuthDto authUser = userMapper.findAuthById(request.getUserId());
         if (authUser == null) {
-            throw new UserStatusException("존재하지 않는 계정입니다.");
+            throw new UserStatusException("아이디 또는 비밀번호가 일치하지 않습니다");
         }
 
-        switch (authUser.getStatus()) {
-            case "WITHDRAWN":
+        // 일반 탈퇴
+        if ("WITHDRAWN".equals(authUser.getStatus())) {
+            if (authUser.getBlindCount() >= 5 && authUser.getBlindCount() == authUser.getLastBlindCount()) {
+                throw new UserStatusException("블라인드 누적으로 탈퇴 처리된 계정입니다");
+            } else {
                 throw new UserStatusException("탈퇴된 계정입니다");
-            case "BANNED":
-                if (authUser.getBannedUntil() != null &&
-                        authUser.getBannedUntil().isAfter(LocalDateTime.now())) {
-                    long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), authUser.getBannedUntil());
-                    throw new UserStatusException("정지된 계정입니다. 정지 해제: "
-                            + authUser.getBannedUntil().toLocalDate() + " (D-" + daysLeft + ")");
-                } else {
-                    // 정지 기간 해제 시 ACTIVE
-                    userMapper.restoreUserToActive(request.getUserId());
-                }
-                break;
-            case "ACTIVE":
-                break;
-            default:
-                throw new UserStatusException("알 수 없는 계정 상태입니다");
+            }
+        }
+
+        // 정지 기간 만료 → ACTIVE 복구
+        if ("BANNED".equals(authUser.getStatus())
+                && authUser.getBannedUntil() != null
+                && authUser.getBannedUntil().isBefore(LocalDateTime.now())) {
+
+            userMapper.restoreUserToActive(authUser.getId());
+            authUser = userMapper.findAuthById(authUser.getId());
+        }
+
+        // 블라인드 누적 탈퇴 (5회 이상, 이전 처리 이력보다 많을 때)
+        if ("ACTIVE".equals(authUser.getStatus())
+                && authUser.getBlindCount() >= 5
+                && authUser.getBlindCount() > authUser.getLastBlindCount()) {
+
+            userMapper.updateUserAsWithdrawn(authUser.getId());
+            userMapper.updateLastBlindCount(authUser.getId(), authUser.getBlindCount());
+            throw new UserStatusException("블라인드 누적으로 탈퇴 처리된 계정입니다");
+        }
+
+        // 블라인드 누적 정지 (3회 이상, 이전 처리 이력보다 많을 때)
+        if ((authUser.getStatus().equals("ACTIVE") || authUser.getStatus().equals("BANNED"))
+                && authUser.getBlindCount() >= 3
+                && authUser.getBlindCount() > authUser.getLastBlindCount()) {
+
+            LocalDateTime until = LocalDateTime.now().plusDays(7);
+            userMapper.updateStatusAndBannedUntil(authUser.getId(), "BANNED", until);
+            userMapper.updateLastBlindCount(authUser.getId(), authUser.getBlindCount());
+
+            long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), until);
+            throw new UserStatusException("블라인드 누적으로 정지된 계정입니다\n정지 해제: "
+                    + until.toLocalDate() + " (D-" + daysLeft + ")");
+        }
+
+        // 일반 정지
+        if ("BANNED".equals(authUser.getStatus())) {
+            if (authUser.getBannedUntil() == null) {
+                throw new UserStatusException("정지된 계정입니다");
+            } else {
+                long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), authUser.getBannedUntil());
+                throw new UserStatusException("블라인드 누적으로 정지된 계정입니다\n정지 해제: "
+                        + authUser.getBannedUntil().toLocalDate() + " (D-" + daysLeft + ")");
+            }
         }
 
         // Spring Security 인증 처리
@@ -73,7 +106,7 @@ public class AuthService {
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (Exception e) {
-            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다");
         }
 
         // 사용자 정보 조회 및 JWT 토큰 생성
@@ -110,19 +143,24 @@ public class AuthService {
         return userMapper.existsByEmail(email);
     }
 
-    public LoginResponseDto socialLogin(String code, String provider) {
+    public LoginResponseDto socialLogin(String code, String provider) throws UserStatusException {
         // 1. 소셜 플랫폼에서 사용자 정보 조회
         SocialUserDto socialUser = socialOAuthService.getUserInfo(code, provider);
 
         // 2. 기존 사용자 조회 (이메일 기준)
         UserDto existingUser = userMapper.findByEmail(socialUser.getEmail());
 
+        // 기존 이메일이 일반 가입자일 경우 소셜 로그인 차단
+        if (existingUser != null && existingUser.getProvider() == null) {
+            throw new UserStatusException("일반 회원으로 가입된 이메일입니다\n일반 로그인을 이용해 주세요");
+        }
+
+        // 3. 신규 사용자 등록
         if (existingUser == null) {
             if (userMapper.existsByEmail(socialUser.getEmail())) {
                 existingUser = userMapper.findByEmail(socialUser.getEmail());
             } else {
                 try {
-                    // 3. 신규 사용자 등록
                     String userId = generateRandomUserId();
 
                     RegisterRequestDto newUser = new RegisterRequestDto();
@@ -146,11 +184,63 @@ public class AuthService {
             }
         }
 
-        // 4. JWT 토큰 발급
-        String accessToken = jwtTokenProvider.generateAccessToken(existingUser);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(existingUser.getId());
+        // 4. 사용자 상태 검사 (AuthDto 기반)
+        AuthDto authUser = userMapper.findAuthByEmail(socialUser.getEmail());
+        if (authUser == null) {
+            throw new UserStatusException("존재하지 않는 계정입니다");
+        }
 
-        return LoginResponseDto.of(accessToken, refreshToken, existingUser);
+        if ("WITHDRAWN".equals(authUser.getStatus())) {
+            if (authUser.getBlindCount() >= 5 && authUser.getBlindCount() == authUser.getLastBlindCount()) {
+                throw new UserStatusException("블라인드 누적으로 탈퇴 처리된 계정입니다");
+            } else {
+                throw new UserStatusException("탈퇴된 계정입니다");
+            }
+        }
+
+        if ("BANNED".equals(authUser.getStatus())
+                && authUser.getBannedUntil() != null
+                && authUser.getBannedUntil().isBefore(LocalDateTime.now())) {
+            userMapper.restoreUserToActive(authUser.getId());
+            authUser = userMapper.findAuthById(authUser.getId());
+        }
+
+        if ("ACTIVE".equals(authUser.getStatus())
+                && authUser.getBlindCount() >= 5
+                && authUser.getBlindCount() > authUser.getLastBlindCount()) {
+            userMapper.updateUserAsWithdrawn(authUser.getId());
+            userMapper.updateLastBlindCount(authUser.getId(), authUser.getBlindCount());
+            throw new UserStatusException("블라인드 누적으로 탈퇴 처리된 계정입니다");
+        }
+
+        if ((authUser.getStatus().equals("ACTIVE") || authUser.getStatus().equals("BANNED"))
+                && authUser.getBlindCount() >= 3
+                && authUser.getBlindCount() > authUser.getLastBlindCount()) {
+            LocalDateTime until = LocalDateTime.now().plusDays(7);
+            userMapper.updateStatusAndBannedUntil(authUser.getId(), "BANNED", until);
+            userMapper.updateLastBlindCount(authUser.getId(), authUser.getBlindCount());
+
+            long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), until);
+            throw new UserStatusException("블라인드 누적으로 정지된 계정입니다\n정지 해제: "
+                    + until.toLocalDate() + " (D-" + daysLeft + ")");
+        }
+
+        if ("BANNED".equals(authUser.getStatus())) {
+            if (authUser.getBannedUntil() == null) {
+                throw new UserStatusException("정지된 계정입니다");
+            } else {
+                long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), authUser.getBannedUntil());
+                throw new UserStatusException("블라인드 누적으로 정지된 계정입니다\n정지 해제: "
+                        + authUser.getBannedUntil().toLocalDate() + " (D-" + daysLeft + ")");
+            }
+        }
+
+        // 5. 사용자 정보 조회 및 JWT 발급
+        UserDto user = userMapper.findUserById(authUser.getId());
+        String accessToken = jwtTokenProvider.generateAccessToken(user);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+
+        return LoginResponseDto.of(accessToken, refreshToken, user);
     }
 
     private String generateRandomUserId() {

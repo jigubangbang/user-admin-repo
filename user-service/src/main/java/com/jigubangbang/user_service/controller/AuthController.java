@@ -34,12 +34,10 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (UserStatusException e) {
             return ResponseEntity.status(401).body(
-                    Map.of("message", e.getMessage()) 
-            );
+                    Map.of("message", e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401).body(
-                    Map.of("message", e.getMessage()) 
-            );
+                    Map.of("message", e.getMessage()));
         }
     }
 
@@ -78,11 +76,19 @@ public class AuthController {
     }
 
     @PostMapping("/{provider}")
-    public ResponseEntity<LoginResponseDto> socialLogin(
+    public ResponseEntity<?> socialLogin(
             @PathVariable String provider,
             @RequestBody SocialRequestDto request) {
-        LoginResponseDto response = authService.socialLogin(request.getCode(), provider);
-        return ResponseEntity.ok(response);
+        try {
+            LoginResponseDto response = authService.socialLogin(request.getCode(), provider);
+            return ResponseEntity.ok(response);
+        } catch (UserStatusException e) {
+            return ResponseEntity.status(401).body(
+                    Map.of("message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(
+                    Map.of("message", e.getMessage()));
+        }
     }
 
     @PostMapping("/refresh-token")

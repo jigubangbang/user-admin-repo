@@ -14,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -109,6 +110,7 @@ public class UserService {
     }
 
     // 자발적 회원 탈퇴
+    @Transactional
     public void withdrawUser(String userId, WithdrawalRequestDto dto) {
         // 회원 정보 조회
         UserDto user = userMapper.findUserById(userId);
@@ -124,7 +126,7 @@ public class UserService {
 
         // 탈퇴 이력 저장
         userMapper.insertWithdrawal(userId, dto.getReasonCode(), dto.getReasonText(), "SELF");
-
+        
         // 회원 상태 WITHDRAWN으로 변경
         int updated = userMapper.updateUserAsWithdrawn(userId);
         if (updated == 0) {
