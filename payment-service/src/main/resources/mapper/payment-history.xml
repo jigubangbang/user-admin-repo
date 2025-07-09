@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jigubangbang.payment_service.mapper.PaymentHistoryMapper">
+
+    <insert id="createPaymentHistory" parameterType="com.jigubangbang.payment_service.model.PaymentHistoryDto">
+        INSERT INTO payment
+            (user_id, imp_uid, merchant_uid, amount, pay_status, paid_at, pay_method, card_name, card_number_masked)
+        VALUES
+            (#{userId}, #{impUid}, #{merchantUid}, #{amount}, #{payStatus}, NOW(), #{payMethod}, #{cardName}, #{cardNumberMasked})
+    </insert>
+
+    <select id="findByMerchantUid" parameterType="string" resultType="com.jigubangbang.payment_service.model.PaymentHistoryDto">
+        SELECT
+            id,
+            user_id,
+            imp_uid,
+            merchant_uid,
+            amount,
+            pay_status,
+            paid_at,
+            cancelled_at,
+            pay_method,
+            card_name,
+            card_number_masked
+        FROM
+            payment
+        WHERE
+            merchant_uid = #{merchantUid}
+    </select>
+
+    <select id="findByUserId" parameterType="string" resultType="com.jigubangbang.payment_service.model.PaymentHistoryDto">
+        SELECT
+            id,
+            user_id,
+            imp_uid,
+            merchant_uid,
+            amount,
+            pay_status,
+            paid_at,
+            cancelled_at,
+            pay_method,
+            card_name,
+            card_number_masked
+        FROM
+            payment
+        WHERE
+            user_id = #{userId}
+        ORDER BY
+            paid_at DESC
+    </select>
+
+    <update id="updatePaymentStatus" parameterType="com.jigubangbang.payment_service.model.PaymentHistoryDto">
+        UPDATE
+            payment
+        SET
+            pay_status = #{payStatus},
+            imp_uid = #{impUid},
+            paid_at = NOW(),
+            pay_method = #{payMethod},
+            card_name = #{cardName},
+            card_number_masked = #{cardNumberMasked}
+        WHERE
+            merchant_uid = #{merchantUid}
+    </update>
+
+</mapper>
