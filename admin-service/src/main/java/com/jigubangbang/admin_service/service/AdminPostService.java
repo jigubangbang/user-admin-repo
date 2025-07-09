@@ -16,6 +16,7 @@ public class AdminPostService {
 
     private final AdminPostMapper adminPostMapper;
 
+    // 게시글 목록 조회
     public List<AdminPostDto> getAllPosts(
             String contentType,
             String nickname,
@@ -40,6 +41,7 @@ public class AdminPostService {
         return result;
     }
 
+    // 블라인드 처리
     public void blindPost(int postId, String contentType) {
         if (contentType.equals("community")) {
             adminPostMapper.blindCommunityPost(postId);
@@ -50,6 +52,7 @@ public class AdminPostService {
         }
     }
 
+    // 블라인드 해제
     public void unblindPost(int postId, String contentType) {
         if (contentType.equals("community")) {
             adminPostMapper.unblindCommunityPost(postId);

@@ -28,11 +28,9 @@ public interface AdminPostMapper {
 
     // 커뮤니티 게시글 블라인드 처리
     void blindCommunityPost(@Param("postId") int postId);
-
     void unblindCommunityPost(@Param("postId") int postId);
 
     // 피드 게시글 블라인드 처리
     void blindFeedPost(@Param("postId") int postId);
-
     void unblindFeedPost(@Param("postId") int postId);
 }

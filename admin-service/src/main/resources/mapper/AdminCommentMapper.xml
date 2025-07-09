@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jigubangbang.admin_service.mapper.AdminCommentMapper">
+  <!-- 커뮤니티 댓글 목록 -->
+  <select id="getCommunityComments" resultType="com.jigubangbang.admin_service.model.AdminCommentDto">
+    SELECT
+      bc.id AS commentId,
+      'community' AS contentType,
+      bc.content,
+      u.user_id,
+      u.nickname,
+      bc.blind_status AS status,
+      bc.created_at
+    FROM board_comment bc
+    JOIN user u ON bc.user_id = u.user_id
+    <where>
+      <if test="nickname != null and nickname != ''">
+        AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
+      </if>
+      <if test="status != null and status != ''">
+        AND bc.blind_status = #{status}
+      </if>
+      <if test="keyword != null and keyword != ''">
+        AND bc.content LIKE CONCAT('%', #{keyword}, '%')
+      </if>
+      <if test="startDate != null">
+        AND bc.created_at &gt;= #{startDate}
+      </if>
+      <if test="endDate != null">
+        AND bc.created_at &lt;= #{endDate}
+      </if>
+    </where>
+    ORDER BY bc.created_at DESC
+  </select>
+
+  <!-- 여행피드 댓글 목록 -->
+  <select id="getFeedComments" resultType="com.jigubangbang.admin_service.model.AdminCommentDto">
+    SELECT
+      fc.id AS commentId,
+      'feed' AS contentType,
+      fc.content,
+      u.user_id,
+      u.nickname,
+      fc.blind_status AS status,
+      fc.created_at
+    FROM feed_comment fc
+    JOIN user u ON fc.user_id = u.user_id
+    <where>
+      <if test="nickname != null and nickname != ''">
+        AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
+      </if>
+      <if test="status != null and status != ''">
+        AND fc.blind_status = #{status}
+      </if>
+      <if test="keyword != null and keyword != ''">
+        AND fc.content LIKE CONCAT('%', #{keyword}, '%')
+      </if>
+      <if test="startDate != null">
+        AND fc.created_at &gt;= #{startDate}
+      </if>
+      <if test="endDate != null">
+        AND fc.created_at &lt;= #{endDate}
+      </if>
+    </where>
+    ORDER BY fc.created_at DESC
+  </select>
+
+  <!-- 모임 댓글 목록 -->
+  <select id="getGroupComments" resultType="com.jigubangbang.admin_service.model.AdminCommentDto">
+    SELECT
+      tc.id AS commentId,
+      'group' AS contentType,
+      tc.content,
+      u.user_id,
+      u.nickname,
+      tc.blind_status AS status,
+      tc.created_at
+    FROM travelmate_comment tc
+    JOIN user u ON tc.user_id = u.user_id
+    <where>
+      <if test="nickname != null and nickname != ''">
+        AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
+      </if>
+      <if test="status != null and status != ''">
+        AND tc.blind_status = #{status}
+      </if>
+      <if test="keyword != null and keyword != ''">
+        AND tc.content LIKE CONCAT('%', #{keyword}, '%')
+      </if>
+      <if test="startDate != null">
+        AND tc.created_at &gt;= #{startDate}
+      </if>
+      <if test="endDate != null">
+        AND tc.created_at &lt;= #{endDate}
+      </if>
+    </where>
+    ORDER BY tc.created_at DESC
+  </select>
+
+  <!-- 커뮤니티 댓글 블라인드 처리/해제 -->
+  <update id="blindCommunityComment">
+    UPDATE board_comment
+    SET blind_status = 'BLINDED'
+    WHERE id = #{commentId}
+  </update>
+
+  <update id="unblindCommunityComment">
+    UPDATE board_comment
+    SET blind_status = 'VISIBLE'
+    WHERE id = #{commentId}
+  </update>
+
+  <!-- 여행피드 댓글 블라인드 처리/해제 -->
+  <update id="blindFeedComment">
+    UPDATE feed_comment
+    SET blind_status = 'BLINDED'
+    WHERE id = #{commentId}
+  </update>
+
+  <update id="unblindFeedComment">
+    UPDATE feed_comment
+    SET blind_status = 'VISIBLE'
+    WHERE id = #{commentId}
+  </update>
+
+  <!-- 모임 댓글 블라인드 처리/해제 -->
+  <update id="blindGroupComment">
+    UPDATE travelmate_comment
+    SET blind_status = 'BLINDED'
+    WHERE id = #{commentId}
+  </update>
+
+  <update id="unblindGroupComment">
+    UPDATE travelmate_comment
+    SET blind_status = 'VISIBLE'
+    WHERE id = #{commentId}
+  </update>
+</mapper>
