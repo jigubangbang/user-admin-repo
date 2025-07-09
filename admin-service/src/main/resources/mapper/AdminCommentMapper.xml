@@ -100,7 +100,7 @@
     ORDER BY tc.created_at DESC
   </select>
 
-  <!-- 커뮤니티 댓글 블라인드 처리/해제 -->
+  <!-- 커뮤니티 댓글 블라인드 처리 -->
   <update id="blindCommunityComment">
     UPDATE board_comment
     SET blind_status = 'BLINDED'
@@ -113,7 +113,7 @@
     WHERE id = #{commentId}
   </update>
 
-  <!-- 여행피드 댓글 블라인드 처리/해제 -->
+  <!-- 여행피드 댓글 블라인드 처리 -->
   <update id="blindFeedComment">
     UPDATE feed_comment
     SET blind_status = 'BLINDED'
@@ -126,7 +126,7 @@
     WHERE id = #{commentId}
   </update>
 
-  <!-- 모임 댓글 블라인드 처리/해제 -->
+  <!-- 모임 댓글 블라인드 처리 -->
   <update id="blindGroupComment">
     UPDATE travelmate_comment
     SET blind_status = 'BLINDED'

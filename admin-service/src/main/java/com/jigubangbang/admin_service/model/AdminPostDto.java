@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class AdminPostDto {
-    private int postId;                 // 게시글 ID (board_post.id 또는 feed_post.id)
+    private int postId;                 // 게시글 ID (board_post.id / feed_post.id)
     private String contentType;         // "community" or "feed"
     private String title;               // 제목 (여행 피드는 제목=내용)
     private String userId;              // 작성자 ID
