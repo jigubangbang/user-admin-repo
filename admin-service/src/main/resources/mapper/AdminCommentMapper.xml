@@ -8,6 +8,7 @@
   <select id="getCommunityComments" resultType="com.jigubangbang.admin_service.model.AdminCommentDto">
     SELECT
       bc.id AS commentId,
+      bc.post_id AS originalPostId,
       'community' AS contentType,
       bc.content,
       u.user_id,
@@ -40,6 +41,7 @@
   <select id="getFeedComments" resultType="com.jigubangbang.admin_service.model.AdminCommentDto">
     SELECT
       fc.id AS commentId,
+      fc.feed_id AS originalPostId,
       'feed' AS contentType,
       fc.content,
       u.user_id,
@@ -72,6 +74,7 @@
   <select id="getGroupComments" resultType="com.jigubangbang.admin_service.model.AdminCommentDto">
     SELECT
       tc.id AS commentId,
+      tc.mate_id AS originalPostId,
       'group' AS contentType,
       tc.content,
       u.user_id,
