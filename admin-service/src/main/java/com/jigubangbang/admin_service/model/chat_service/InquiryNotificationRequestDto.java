@@ -10,11 +10,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InquiryNotificationRequestDto {
-
     private String userId;
-    private String title; 
+    private String title;
     private String message;
     private String relatedUrl;
     private String senderId;
-
+    private String nickname;
 }
