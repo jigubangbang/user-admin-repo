@@ -16,9 +16,7 @@ public class NotificationServiceClientFallback implements NotificationServiceCli
     
     @Override
      public ResponseEntity<Map<String, Object>> createInquiryAnsweredNotification(@RequestBody InquiryNotificationRequestDto request) {
-        log.warn("[Fallback] 일대일 답변 알림 전송 실패 - 메인 기능은 정상 처리됨. 요청 데이터: userId={}, message={}, url={}, senderId={}",
-            request.getUserId(), request.getMessage(), request.getRelatedUrl(), request.getSenderId());
-
+        log.warn("[Fallback] 일대일 답변 알림 전송 실패 - 메인 기능은 정상 처리됨");
         return ResponseEntity.ok(Map.of("success", false, "fallback", true));
     }
 
