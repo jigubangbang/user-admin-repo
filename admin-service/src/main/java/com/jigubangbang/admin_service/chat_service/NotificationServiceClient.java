@@ -12,6 +12,6 @@ import com.jigubangbang.admin_service.model.chat_service.InquiryNotificationRequ
 @FeignClient( name="chat-service", configuration = NotificationServiceClientConfig.class, fallback = NotificationServiceClientFallback.class)
 public interface NotificationServiceClient { 
     // 1:1 문의 답변/처리 알림
-    @PostMapping("/inqury")
+    @PostMapping("/notifications/inquiry")
     public ResponseEntity<Map<String, Object>> createInquiryAnsweredNotification(@RequestBody InquiryNotificationRequestDto request);
 }

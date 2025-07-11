@@ -1,6 +1,7 @@
 package com.jigubangbang.admin_service.model.chat_service;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,11 +10,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class InquiryNotificationRequestDto {
     private String userId;
-    private String title;
     private String message;
     private String relatedUrl;
     private String senderId;
-    private String nickname;
 }
