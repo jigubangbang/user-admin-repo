@@ -23,5 +23,5 @@ public interface UserResponseMapper {
      * @param requestDto 업데이트할 정보가 담긴 DTO
      * @return 영향을 받은 행의 수
      */
-    int updatePremiumInfo(@Param("userId") String userId, @Param("premium") Boolean premium, @Param("customerUid") String customerUid);
+    int updatePremiumInfo(@Param("userId") String userId, @Param("premium") boolean premium, @Param("customerUid") String customerUid);
 }

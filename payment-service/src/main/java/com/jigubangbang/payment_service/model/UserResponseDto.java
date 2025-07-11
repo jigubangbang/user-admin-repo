@@ -13,5 +13,6 @@ public class UserResponseDto {
     private String email;
     private String nickname;
     private String customerUid; // 우리가 필요한 빌링키!
+    private boolean isPremium; // 사용자의 프리미엄 상태
     // ... user-service가 응답해주는 다른 필드들
 }

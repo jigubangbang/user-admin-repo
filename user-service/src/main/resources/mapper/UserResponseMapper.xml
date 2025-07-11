@@ -11,7 +11,8 @@
             user_id         AS userId,
             email,
             nickname,
-            customer_uid    AS customerUid
+            customer_uid    AS customerUid,
+            is_premium      AS isPremium
         FROM
             user
         WHERE
@@ -21,12 +22,8 @@
     <update id="updatePremiumInfo">
         UPDATE user
         <set>
-            <if test="customerUid != null">
-                customer_uid = #{customerUid},
-            </if>
-            <if test="premium != null">
-                is_premium = #{premium},
-            </if>
+            customer_uid = #{customerUid},
+            is_premium = #{premium},
         </set>
         WHERE
             user_id = #{userId}

@@ -1,8 +1,12 @@
 package com.jigubangbang.payment_service.mapper;
 
 import com.jigubangbang.payment_service.model.PaymentHistoryDto;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 
+import org.apache.ibatis.annotations.Param;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,5 +50,21 @@ public interface PaymentHistoryMapper {
      * @return 영향을 받은 행의 수
      */
     int updatePaymentImpUid(PaymentHistoryDto paymentHistoryDto);
+
+    /**
+     * 가맹점 주문번호(merchant_uid)로 결제 내역을 삭제합니다.
+     * @param merchantUid 삭제할 주문번호
+     * @return 영향을 받은 행의 수
+     */
+    @Delete("DELETE FROM payment WHERE merchant_uid = #{merchantUid}")
+    int deleteByMerchantUid(String merchantUid);
+
+    /**
+     * 특정 시간 이전에 생성된 'READY' 상태의 결제 내역을 삭제합니다.
+     * @param cutoffTime 기준 시간
+     * @return 삭제된 행의 수
+     */
+    @Delete("DELETE FROM payment WHERE pay_status = 'READY' AND paid_at < #{cutoffTime}")
+    int deleteOldReadyPayments(@Param("cutoffTime") LocalDateTime cutoffTime);
 
 }
