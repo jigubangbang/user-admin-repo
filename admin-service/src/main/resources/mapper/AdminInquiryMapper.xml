@@ -15,7 +15,10 @@
       i.content,       
       i.attachment,
       i.status,
-      i.created_at AS createdAt
+      i.created_at AS createdAt,
+      i.admin_reply AS adminReply,    
+      i.admin_id AS adminId,          
+    i.replied_at AS repliedAt 
     FROM inquiry i
     JOIN user u ON i.user_id = u.user_id
     ORDER BY i.created_at DESC
@@ -32,7 +35,10 @@
       i.content,
       i.attachment,
       i.status,
-      i.created_at AS createdAt
+      i.created_at AS createdAt,
+      i.admin_reply AS adminReply,  
+      i.admin_id AS adminId,         
+      i.replied_at AS repliedAt 
     FROM inquiry i
     JOIN user u ON i.user_id = u.user_id
     WHERE i.id = #{inquiryId}
