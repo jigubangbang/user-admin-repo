@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,8 +94,10 @@ public class PaymentService {
         try {
             // 1. user-service에 빌링키(customer_uid)만 null로 업데이트 요청
             //    is_premium 상태는 유지하여, 만료일까지 혜택을 보장합니다.
+            UserResponseDto userInfo = userServiceClient.getUserInfo(userId); // 현재 사용자 정보 조회
             UserPremiumUpdateRequestDto userUpdateRequest = UserPremiumUpdateRequestDto.builder()
                     .customerUid(null) // 빌링키만 null로 설정
+                    .isPremium(userInfo.isPremium()) // 현재 is_premium 상태 유지
                     .build();
             userServiceClient.updateUserPremiumStatus(userId, userUpdateRequest);
             log.info("사용자 [{}]의 빌링키 제거 완료. 다음 자동 결제가 중단됩니다.", userId);
@@ -235,11 +238,8 @@ public class PaymentService {
                 result.put("customerUid", customerUid);
                 return result;
             } else {
-                log.warn("결제가 완료되지 않았습니다. 상태: {}", status);
-                // 실패 또는 다른 상태 처리 (예: 결제 실패 기록)
-                order.setPayStatus(status.toUpperCase()); // 예: FAILED
-                order.setImpUid(impUid);
-                paymentHistoryMapper.updatePaymentStatus(order);
+                log.warn("결제가 완료되지 않았습니다. 상태: {}. merchant_uid: {}에 해당하는 READY 상태의 결제 기록을 삭제합니다.", status, merchantUid);
+                paymentHistoryMapper.deleteByMerchantUid(merchantUid);
                 return null;
             }
         } catch (Exception e) {
@@ -396,6 +396,27 @@ public class PaymentService {
         } catch (Exception e) {
             log.error("환불 처리 중 오류 발생: userId={}, merchantUid={}", userId, merchantUid, e);
             throw new RuntimeException("환불 처리 중 오류가 발생했습니다. " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 매 시간 정각, 생성된 지 1시간이 지난 'READY' 상태의 결제 기록을 삭제합니다.
+     * 사용자가 결제를 시작했지만 완료하지 않고 이탈한 경우를 처리합니다.
+     */
+    @Scheduled(cron = "0 0 * * * *") // 매 시간 정각에 실행
+    @Transactional
+    public void cleanupAbandonedPayments() {
+        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+        log.info("{} 이전의 오래된 'READY' 상태 결제 기록 정리를 시작합니다.", oneHourAgo);
+        try {
+            int deletedRows = paymentHistoryMapper.deleteOldReadyPayments(oneHourAgo);
+            if (deletedRows > 0) {
+                log.info("총 {}개의 오래된 'READY' 상태 결제 기록을 삭제했습니다.", deletedRows);
+            } else {
+                log.info("삭제할 오래된 'READY' 상태의 결제 기록이 없습니다.");
+            }
+        } catch (Exception e) {
+            log.error("오래된 'READY' 상태 결제 기록 삭제 중 오류 발생", e);
         }
     }
 }

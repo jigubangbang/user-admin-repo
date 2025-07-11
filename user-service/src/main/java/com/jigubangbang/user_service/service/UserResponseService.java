@@ -35,7 +35,7 @@ public class UserResponseService {
         // isPremium과 customerUid를 모두 업데이트
         int updatedRows = userResponseMapper.updatePremiumInfo(
             userId,
-            requestDto.getIsPremium(),
+            requestDto.isPremium(),
             requestDto.getCustomerUid()
         );
 

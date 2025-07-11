@@ -129,10 +129,7 @@ public class PaymentController {
     public ResponseEntity<List<PaymentHistoryDto>> getPaymentHistory(@RequestHeader("User-Id") String userId) {
         try {
             List<PaymentHistoryDto> history = paymentService.getPaymentHistoryByUserId(userId);
-            if (history.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(history);
+            return ResponseEntity.ok(history); // 항상 200 OK와 함께 리스트(비어 있을 수 있음)를 반환
         } catch (Exception e) {
             log.error("결제 내역 조회 중 오류 발생: userId={}", userId, e);
             return ResponseEntity.internalServerError().build();
