@@ -22,4 +22,13 @@ public class AdminInquiryService {
     public AdminInquiryDto getInquiryDetail(int inquiryId) {
         return adminInquiryMapper.getInquiryById(inquiryId);
     }
+
+    // 답변 등록
+    public void replyToInquiry(int inquiryId, String adminId, String reply) {
+        int updated = adminInquiryMapper.updateInquiryReply(inquiryId, adminId, reply);
+        if (updated == 0) {
+            throw new IllegalArgumentException("문의 답변 등록에 실패했습니다.");
+        }
+    }
+
 }

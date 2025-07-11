@@ -37,4 +37,15 @@
     JOIN user u ON i.user_id = u.user_id
     WHERE i.id = #{inquiryId}
   </select>
+
+  <!-- 답변 등록 -->
+  <update id="updateInquiryReply">
+    UPDATE inquiry
+    SET
+      admin_reply = #{reply},
+      admin_id = #{adminId},
+      replied_at = NOW(),
+      status = 'REPLIED'
+    WHERE id = #{inquiryId}
+  </update>
 </mapper>
