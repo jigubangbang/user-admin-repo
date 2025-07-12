@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.jigubangbang.admin_service.mapper.ContentMapper">
+
+    <!-- 게시글 -->
+    <update id="blindBoardPost">
+        UPDATE board_post SET blind_status = 'BLINDED' WHERE id = #{id}
+    </update>
+
+    <update id="blindFeedPost">
+        UPDATE feed_post SET blind_status = 'BLINDED' WHERE id = #{id}
+    </update>
+
+    <!-- 댓글 -->
+    <update id="blindBoardComment">
+        UPDATE board_comment SET blind_status = 'BLINDED' WHERE id = #{id}
+    </update>
+
+    <update id="blindFeedComment">
+        UPDATE feed_comment SET blind_status = 'BLINDED' WHERE id = #{id}
+    </update>
+
+    <update id="blindMateComment">
+        UPDATE travelmate_comment SET blind_status = 'BLINDED' WHERE id = #{id}
+    </update>
+
+    <!-- 그룹 -->
+    <update id="blindMateGroup">
+        UPDATE travelmate_post SET blind_status = 'BLINDED' WHERE id = #{id}
+    </update>
+
+    <update id="blindInfoGroup">
+        UPDATE travel_info SET blind_status = 'BLINDED' WHERE id = #{id}
+    </update>
+
+</mapper>
