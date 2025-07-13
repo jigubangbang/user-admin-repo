@@ -42,7 +42,7 @@ public class AdminReportService {
                 .userId(report.getTargetUserId())
                 .message("회원님의 콘텐츠가 블라인드 처리되었습니다.\n자세한 사항은 1:1 문의를 통해 확인해 주세요.")
                 .relatedUrl("/user/inquiry") 
-                .senderId("admin") 
+                .senderId(null) 
                 .build();
 
         notificationServiceClient.createBlindNotification(notification);
