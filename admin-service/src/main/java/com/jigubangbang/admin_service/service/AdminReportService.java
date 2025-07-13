@@ -38,16 +38,16 @@ public class AdminReportService {
         AdminReportDto report = adminReportMapper.findReportById(reportId);
         blindTargetContent(report.getContentType(), report.getContentSubtype(), report.getContentId());
         blindCountMapper.increaseBlindCount(report.getTargetUserId());
-        /*
+        
         BlindNotificationRequestDto notification = BlindNotificationRequestDto.builder()
                 .userId(report.getTargetUserId())
-                .message("회원님의 콘텐츠가 블라인드 처리되었습니다.\n자세한 사항은 1:1 문의를 통해 확인해 주세요.")
+                .message("콘텐츠가 블라인드 처리되었습니다.\n자세한 사항은 1:1 문의를 통해 확인해 주세요.")
                 .relatedUrl("/user/inquiry")
                 .senderId(null)
                 .build();
 
         notificationServiceClient.createBlindNotification(notification);
-        */
+        
     }
 
     private void blindTargetContent(String type, String subtype, int id) {
