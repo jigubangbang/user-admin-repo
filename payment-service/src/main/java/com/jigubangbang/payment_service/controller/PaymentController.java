@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.jigubangbang.payment_service.model.PaymentMethodChangeRequestDto;
 import com.jigubangbang.payment_service.model.PremiumStatusResponseDto;
 import com.jigubangbang.payment_service.model.PaymentHistoryDto;
-import com.jigubangbang.payment_service.model.PremiumHistoryDto;
 import com.jigubangbang.payment_service.model.RefundRequestDto;
 import com.jigubangbang.payment_service.service.PaymentService;
 

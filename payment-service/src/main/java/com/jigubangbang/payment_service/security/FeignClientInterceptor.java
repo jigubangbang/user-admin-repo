@@ -15,7 +15,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import io.jsonwebtoken.io.Decoders;
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component

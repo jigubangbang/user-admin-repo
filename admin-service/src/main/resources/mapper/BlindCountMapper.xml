@@ -11,4 +11,10 @@
         WHERE user_id = #{userId}
     </update>
 
+    <update id="decreaseBlindCount">
+      UPDATE user 
+      SET blind_count = GREATEST(blind_count - 1, 0)
+      WHERE user_id = #{userId}
+    </update>
+
 </mapper>

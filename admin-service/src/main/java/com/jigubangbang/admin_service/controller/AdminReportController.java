@@ -22,17 +22,28 @@ public class AdminReportController {
         return ResponseEntity.ok(reports);
     }
 
-    // 신고 기각 처리 
+    // 신고 기각 처리
     @PutMapping("/{reportId}/keep")
     public ResponseEntity<String> keepReport(@PathVariable("reportId") int reportId) {
         adminReportService.keepReport(reportId);
         return ResponseEntity.ok("신고가 기각되었습니다.");
     }
 
-    // 신고 승인 처리 
+    // 신고 승인 처리
     @PutMapping("/{reportId}/blind")
     public ResponseEntity<String> blindReport(@PathVariable("reportId") int reportId) {
         adminReportService.blindReport(reportId);
         return ResponseEntity.ok("신고가 승인되었습니다.");
+    }
+
+    // 신고 승인 철회 처리
+    @PutMapping("/{reportId}/unblind")
+    public ResponseEntity<String> cancelBlindReport(@PathVariable("reportId") int reportId) {
+        try {
+            adminReportService.cancelBlindReport(reportId);
+            return ResponseEntity.ok("신고 승인 철회 및 콘텐츠가 복구되었습니다.");
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

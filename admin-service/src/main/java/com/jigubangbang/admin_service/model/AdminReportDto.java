@@ -24,6 +24,6 @@ public class AdminReportDto {
     private String reasonCode;         // SEX, ABU, SPM, ILG, ETC
     private String reasonText;         // 기타 사유 텍스트 (선택)
 
-    private String reportStatus;       // PENDING, KEPT, BLINDED
+    private String reportStatus;       // PENDING, KEPT, BLINDED, RESCIND
     private LocalDateTime reportedAt;  // 신고 일시
 }
