@@ -39,9 +39,6 @@ MSA(Microservice Architecture) 구조에 따라 각 도메인 별 기능이 분�
 | `DELETE`| `/api/payment/premium/cancel`           | USER   | 구독 해지 (빌링키 삭제)                    |
 | `GET`  | `/api/payment/history`                   | USER   | 결제 내역 조회                             |
 | `GET`  | `/api/payment/{paymentId}`               | USER   | 결제 상세 조회                             |
-| `GET`  | `/api/payment/admin/payments`            | ADMIN  | 전체 결제 내역 조회                        |
-| `GET`  | `/api/payment/admin/subscriptions`       | ADMIN  | 전체 구독 현황 조회                        |
-| `PUT`  | `/api/payment/admin/{paymentId}/refund`  | ADMIN  | 관리자 환불 처리                           |
 | `POST` | `/api/payment/webhook/iamport`           | SYSTEM | Iamport 웹훅 (결제 결과 수신)              |
 | `POST` | `/api/payment/internal/auto-payment`     | SYSTEM | 자동 결제 실행                             |
 
