@@ -12,7 +12,7 @@ MSA(Microservice Architecture) 구조에 따라 각 도메인 별 기능이 분�
 
 ## 주요 기술 스택
 
--   **Backend:** Java 17, Spring Boot 3, Spring Cloud, Mybatis, MySQL, Lombok, Feign Client
+-   **Backend:** Java 17, Spring Boot 3, Spring Cloud, MyBatis, MySQL, Lombok, Feign Client
 -   **Frontend:** React, Vite, Axios, Portone (아임포트)
 -   **Infra:** Eureka, Spring Cloud Gateway, Spring Cloud Config
 
@@ -29,17 +29,18 @@ MSA(Microservice Architecture) 구조에 따라 각 도메인 별 기능이 분�
 -   **자동 결제 스케줄링:** 매월 정해진 시각에 만료 예정인 프리미엄 구독에 대해 자동 결제를 시도합니다.
 -   **웹훅 연동:** Portone(아임포트) 웹훅을 통해 결제 및 환불 상태의 변경을 실시간으로 시스템에 반영합니다.
 
-### API Endpoints
+### 🔗 API Endpoints
 
-| Method | URL                                      | Role   | 설명                                       |
-| :----- | :--------------------------------------- | :----- | :----------------------------------------- |
-| `POST` | `/api/payment/premium/subscribe`         | USER   | 프리미엄 구독 시작 (첫 결제 및 빌링키 발급) |
-| `GET`  | `/api/payment/premium/status`            | USER   | 구독 상태 조회                             |
-| `DELETE`| `/api/payment/premium/cancel`           | USER   | 구독 해지 (빌링키 삭제)                    |
-| `GET`  | `/api/payment/history`                   | USER   | 결제 내역 조회                             |
-| `GET`  | `/api/payment/{paymentId}`               | USER   | 결제 상세 조회                             |
-| `POST` | `/api/payment/webhook/iamport`           | SYSTEM | Iamport 웹훅 (결제 결과 수신)              |
-| `POST` | `/api/payment/internal/auto-payment`     | SYSTEM | 자동 결제 실행                             |
+| Method | URL                                          | Role   | 설명                                       |
+| :----- | :------------------------------------------- | :----- | :----------------------------------------- |
+| `POST` | `/api/payment/premium/subscribe`             | USER   | 프리미엄 구독 시작 (첫 결제 및 빌링키 발급) |
+| `POST` | `/api/payment/premium/change-payment-method` | USER   | 정기 결제 카드 변경                        |
+| `GET`  | `/api/payment/premium/status`                | USER   | 구독 상태 조회                             |
+| `DELETE`| `/api/payment/premium/cancel`               | USER   | 구독 해지 (빌링키 삭제)                    |
+| `GET`  | `/api/payment/history`                       | USER   | 내 결제 내역 조회                          |
+| `GET`  | `/api/payment/{paymentId}`                   | USER   | 결제 상세 조회                             |
+| `POST` | `/api/payment/webhook/iamport`               | SYSTEM | Iamport 웹훅 (결제 결과 수신)              |
+| `POST` | `/api/payment/internal/auto-payment`         | SYSTEM | 자동 결제 실행                             |
 
 ### 데이터베이스 스키마
 
