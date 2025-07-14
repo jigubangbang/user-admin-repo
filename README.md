@@ -12,7 +12,7 @@ MSA(Microservice Architecture) 구조에 따라 각 도메인 별 기능이 분�
 
 ## 주요 기술 스택
 
--   **Backend:** Java 17, Spring Boot 3, Spring Cloud, JPA(Hibernate), MySQL, Lombok, Feign Client
+-   **Backend:** Java 17, Spring Boot 3, Spring Cloud, Mybatis, MySQL, Lombok, Feign Client
 -   **Frontend:** React, Vite, Axios, Portone (아임포트)
 -   **Infra:** Eureka, Spring Cloud Gateway, Spring Cloud Config
 
