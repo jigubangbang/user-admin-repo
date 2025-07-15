@@ -144,43 +144,49 @@ public class AuthService {
     }
 
     public LoginResponseDto socialLogin(String code, String provider) throws UserStatusException {
+        System.out.println("=== socialLogin 시작 ===");
+        System.out.println("받은 provider: " + provider);
+
         // 1. 소셜 플랫폼에서 사용자 정보 조회
         SocialUserDto socialUser = socialOAuthService.getUserInfo(code, provider);
+        System.out.println("소셜 사용자 정보: " + socialUser.getEmail() + ", provider: " + socialUser.getProvider());
 
-        // 2. 기존 사용자 조회 (이메일 기준)
-        UserDto existingUser = userMapper.findByEmail(socialUser.getEmail());
+        // 2. 기존 사용자 조회 (이메일 + provider 기준)
+        UserDto existingUser = userMapper.findByEmailAndProvider(socialUser.getEmail(), socialUser.getProvider());
+        System.out.println("기존 사용자 조회 결과: " + existingUser);
 
-        // 기존 이메일이 일반 가입자일 경우 소셜 로그인 차단
-        if (existingUser != null && existingUser.getProvider() == null) {
-            throw new UserStatusException("일반 회원으로 가입된 이메일입니다\n일반 로그인을 이용해 주세요");
+        // 같은 이메일의 다른 계정이 있는지 확인
+        UserDto anyExistingUser = userMapper.findByEmail(socialUser.getEmail());
+        if (anyExistingUser != null && !socialUser.getProvider().equals(anyExistingUser.getProvider())) {
+            if (anyExistingUser.getProvider() == null) {
+                throw new UserStatusException("일반 회원으로 가입된 이메일입니다\n일반 로그인을 이용해 주세요");
+            } else {
+                throw new UserStatusException("소셜 회원으로 가입된 이메일입니다.\n기존 소셜 로그인을 이용해 주세요.");
+            }
         }
 
         // 3. 신규 사용자 등록
         if (existingUser == null) {
-            if (userMapper.existsByEmail(socialUser.getEmail())) {
-                existingUser = userMapper.findByEmail(socialUser.getEmail());
-            } else {
-                try {
-                    String userId = generateRandomUserId();
+            try {
+                String userId = generateRandomUserId();
 
-                    RegisterRequestDto newUser = new RegisterRequestDto();
-                    newUser.setUserId(userId);
-                    newUser.setPassword(""); // 소셜 로그인은 비밀번호 없음
-                    newUser.setConfirmPassword("");
-                    newUser.setName(socialUser.getName());
-                    newUser.setNickname(socialUser.getNickname());
-                    newUser.setEmail(socialUser.getEmail());
-                    newUser.setTel(socialUser.getTel());
-                    newUser.setAgreedRequired(true);
-                    newUser.setAgreedOptional(false);
-                    newUser.setProvider(socialUser.getProvider());
-                    newUser.setProviderId(socialUser.getProviderId());
+                RegisterRequestDto newUser = new RegisterRequestDto();
+                newUser.setUserId(userId);
+                newUser.setPassword(""); // 소셜 로그인은 비밀번호 없음
+                newUser.setConfirmPassword("");
+                newUser.setName(socialUser.getName());
+                newUser.setNickname(socialUser.getNickname());
+                newUser.setEmail(socialUser.getEmail());
+                newUser.setTel(socialUser.getTel());
+                newUser.setAgreedRequired(true);
+                newUser.setAgreedOptional(false);
+                newUser.setProvider(socialUser.getProvider());
+                newUser.setProviderId(socialUser.getProviderId());
 
-                    userMapper.insertUser(newUser);
-                    existingUser = userMapper.findByEmail(socialUser.getEmail());
-                } catch (Exception e) {
-                    existingUser = userMapper.findByEmail(socialUser.getEmail());
-                }
+                userMapper.insertUser(newUser);
+                existingUser = userMapper.findByEmailAndProvider(socialUser.getEmail(), socialUser.getProvider());
+            } catch (Exception e) {
+                existingUser = userMapper.findByEmailAndProvider(socialUser.getEmail(), socialUser.getProvider());
             }
         }
 
