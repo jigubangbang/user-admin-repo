@@ -47,6 +47,7 @@ public class JwtTokenProvider {
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("name", user.getName());
+        claims.put("provider", user.getProvider());
 
         List<String> roles = new ArrayList<>();
         
