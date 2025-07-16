@@ -93,4 +93,38 @@
   <update id="unblindInfoGroup">
     UPDATE travel_info SET blind_status = 'VISIBLE' WHERE id = #{groupId}
   </update>
+
+  <!-- 그룹 정보 조회 -->
+  <select id="getGroupInfo" resultType="com.jigubangbang.admin_service.model.AdminGroupDto">
+    <choose>
+      <when test="contentType == 'mate'">
+        SELECT 
+          tmp.id AS groupId,
+          'mate' AS contentType,
+          tmp.title,
+          tmp.simple_description AS simpleDescription,
+          u.user_id,
+          u.nickname,
+          tmp.blind_status AS status,
+          tmp.created_at
+        FROM travelmate_post tmp
+        JOIN user u ON tmp.creator_id = u.user_id
+        WHERE tmp.id = #{groupId}
+      </when>
+      <when test="contentType == 'info'">
+        SELECT 
+          ti.id AS groupId,
+          'info' AS contentType,
+          ti.title,
+          ti.simple_description AS simpleDescription,
+          u.user_id,
+          u.nickname,
+          ti.blind_status AS status,
+          ti.created_at
+        FROM travel_info ti
+        JOIN user u ON ti.creator_id = u.user_id
+        WHERE ti.id = #{groupId}
+      </when>
+    </choose>
+  </select>
 </mapper>

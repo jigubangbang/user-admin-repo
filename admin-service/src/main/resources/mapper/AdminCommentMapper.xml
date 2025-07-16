@@ -141,4 +141,52 @@
     SET blind_status = 'VISIBLE'
     WHERE id = #{commentId}
   </update>
+
+  <!-- 댓글 정보 조회 -->
+  <select id="getCommentInfo" resultType="com.jigubangbang.admin_service.model.AdminCommentDto">
+    <choose>
+      <when test="contentType == 'community'">
+        SELECT 
+          bc.id AS commentId,
+          bc.post_id AS originalPostId,
+          'community' AS contentType,
+          bc.content,
+          u.user_id,
+          u.nickname,
+          bc.blind_status AS status,
+          bc.created_at
+        FROM board_comment bc
+        JOIN user u ON bc.user_id = u.user_id
+        WHERE bc.id = #{commentId}
+      </when>
+      <when test="contentType == 'feed'">
+        SELECT 
+          fc.id AS commentId,
+          fc.feed_id AS originalPostId,
+          'feed' AS contentType,
+          fc.content,
+          u.user_id,
+          u.nickname,
+          fc.blind_status AS status,
+          fc.created_at
+        FROM feed_comment fc
+        JOIN user u ON fc.user_id = u.user_id
+        WHERE fc.id = #{commentId}
+      </when>
+      <when test="contentType == 'group'">
+        SELECT 
+          tc.id AS commentId,
+          tc.mate_id AS originalPostId,
+          'group' AS contentType,
+          tc.content,
+          u.user_id,
+          u.nickname,
+          tc.blind_status AS status,
+          tc.created_at
+        FROM travelmate_comment tc
+        JOIN user u ON tc.user_id = u.user_id
+        WHERE tc.id = #{commentId}
+      </when>
+    </choose>
+  </select>
 </mapper>

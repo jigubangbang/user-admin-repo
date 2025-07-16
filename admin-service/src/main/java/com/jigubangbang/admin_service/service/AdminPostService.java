@@ -1,9 +1,13 @@
 package com.jigubangbang.admin_service.service;
 
 import com.jigubangbang.admin_service.mapper.AdminPostMapper;
+import com.jigubangbang.admin_service.mapper.BlindCountMapper;
 import com.jigubangbang.admin_service.model.AdminPostDto;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,6 +19,7 @@ import java.util.List;
 public class AdminPostService {
 
     private final AdminPostMapper adminPostMapper;
+    private final BlindCountMapper blindCountMapper;
 
     // 게시글 목록 조회
     public List<AdminPostDto> getAllPosts(
@@ -42,7 +47,14 @@ public class AdminPostService {
     }
 
     // 블라인드 처리
+    @Transactional
     public void blindPost(int postId, String contentType) {
+        AdminPostDto postInfo = adminPostMapper.getPostInfo(postId, contentType);
+
+        if ("BLINDED".equals(postInfo.getStatus())) { // 이미 블라인드된 상태면 처리하지 않음
+            return;
+        }
+        
         if (contentType.equals("community")) {
             adminPostMapper.blindCommunityPost(postId);
         } else if (contentType.equals("feed")) {
@@ -50,10 +62,19 @@ public class AdminPostService {
         } else {
             throw new IllegalArgumentException("Invalid contentType: " + contentType);
         }
+        
+        blindCountMapper.increaseBlindCount(postInfo.getUserId()); // blind_count + 1
     }
 
     // 블라인드 해제
+    @Transactional
     public void unblindPost(int postId, String contentType) {
+        AdminPostDto postInfo = adminPostMapper.getPostInfo(postId, contentType);
+
+        if ("VISIBLE".equals(postInfo.getStatus())) { // 이미 공개된 상태면 처리하지 않음
+            return;
+        }
+        
         if (contentType.equals("community")) {
             adminPostMapper.unblindCommunityPost(postId);
         } else if (contentType.equals("feed")) {
@@ -61,5 +82,7 @@ public class AdminPostService {
         } else {
             throw new IllegalArgumentException("Invalid contentType: " + contentType);
         }
+        
+        blindCountMapper.decreaseBlindCount(postInfo.getUserId()); // blind_count - 1
     }
 }

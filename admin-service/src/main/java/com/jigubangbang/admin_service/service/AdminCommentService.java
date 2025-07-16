@@ -1,9 +1,11 @@
 package com.jigubangbang.admin_service.service;
 
 import com.jigubangbang.admin_service.mapper.AdminCommentMapper;
+import com.jigubangbang.admin_service.mapper.BlindCountMapper;
 import com.jigubangbang.admin_service.model.AdminCommentDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,6 +17,7 @@ import java.util.List;
 public class AdminCommentService {
 
     private final AdminCommentMapper adminCommentMapper;
+    private final BlindCountMapper blindCountMapper;
 
     // 댓글 목록 조회
     public List<AdminCommentDto> getAllComments(String contentType, String nickname, String status, String keyword,
@@ -40,22 +43,40 @@ public class AdminCommentService {
     }
 
     // 블라인드 처리
+    @Transactional 
     public void blindComment(int commentId, String contentType) {
+        AdminCommentDto commentInfo = adminCommentMapper.getCommentInfo(commentId, contentType);
+        
+        if ("BLINDED".equals(commentInfo.getStatus())) { // 이미 블라인드된 상태면 처리하지 않음 
+            return;
+        }
+        
         switch (contentType) {
             case "community" -> adminCommentMapper.blindCommunityComment(commentId);
             case "feed" -> adminCommentMapper.blindFeedComment(commentId);
             case "group" -> adminCommentMapper.blindGroupComment(commentId);
             default -> throw new IllegalArgumentException("Invalid contentType: " + contentType);
         }
+        
+        blindCountMapper.increaseBlindCount(commentInfo.getUserId()); // blind_count + 1 
     }
 
     // 블라인드 해제
+    @Transactional  
     public void unblindComment(int commentId, String contentType) {
+        AdminCommentDto commentInfo = adminCommentMapper.getCommentInfo(commentId, contentType);
+        
+        if ("VISIBLE".equals(commentInfo.getStatus())) { // 이미 공개된 상태면 처리하지 않음 
+            return;
+        }
+        
         switch (contentType) {
             case "community" -> adminCommentMapper.unblindCommunityComment(commentId);
             case "feed" -> adminCommentMapper.unblindFeedComment(commentId);
             case "group" -> adminCommentMapper.unblindGroupComment(commentId);
             default -> throw new IllegalArgumentException("Invalid contentType: " + contentType);
         }
+        
+        blindCountMapper.decreaseBlindCount(commentInfo.getUserId()); // blind_count - 1 
     }
 }

@@ -96,4 +96,36 @@
     SET blind_status = 'VISIBLE'
     WHERE id = #{postId}
   </update>
+
+  <!-- 게시글 정보 조회 -->
+  <select id="getPostInfo" resultType="com.jigubangbang.admin_service.model.AdminPostDto">
+    <choose>
+      <when test="contentType == 'community'">
+        SELECT 
+          bp.id AS postId,
+          'community' AS contentType,
+          bp.title,
+          u.user_id,
+          u.nickname,
+          bp.blind_status AS status,
+          bp.created_at
+        FROM board_post bp
+        JOIN user u ON bp.user_id = u.user_id
+        WHERE bp.id = #{postId}
+      </when>
+      <when test="contentType == 'feed'">
+        SELECT 
+          fp.id AS postId,
+          'feed' AS contentType,
+          fp.title,
+          u.user_id,
+          u.nickname,
+          fp.blind_status AS status,
+          fp.created_at
+        FROM feed_post fp
+        JOIN user u ON fp.user_id = u.user_id
+        WHERE fp.id = #{postId}
+      </when>
+    </choose>
+  </select>
 </mapper>
