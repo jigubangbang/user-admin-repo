@@ -35,4 +35,7 @@ public interface AdminGroupMapper {
     // 정보공유방 블라인드 처리
     void unblindMateGroup(@Param("groupId") int groupId);
     void unblindInfoGroup(@Param("groupId") int groupId);
+
+    // 그룹 정보 조회
+    AdminGroupDto getGroupInfo(@Param("groupId") int groupId, @Param("contentType") String contentType);
 }

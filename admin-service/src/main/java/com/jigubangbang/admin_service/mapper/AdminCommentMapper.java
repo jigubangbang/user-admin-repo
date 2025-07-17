@@ -37,4 +37,6 @@ public interface AdminCommentMapper {
     void blindGroupComment(@Param("commentId") int commentId);
     void unblindGroupComment(@Param("commentId") int commentId);
     
+    // 댓글 정보 조회
+    AdminCommentDto getCommentInfo(@Param("commentId") int commentId, @Param("contentType") String contentType);
 }
