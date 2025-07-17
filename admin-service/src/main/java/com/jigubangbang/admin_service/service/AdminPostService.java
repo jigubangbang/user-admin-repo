@@ -1,13 +1,14 @@
 package com.jigubangbang.admin_service.service;
 
+import com.jigubangbang.admin_service.chat_service.NotificationServiceClient;
 import com.jigubangbang.admin_service.mapper.AdminPostMapper;
 import com.jigubangbang.admin_service.mapper.BlindCountMapper;
 import com.jigubangbang.admin_service.model.AdminPostDto;
+import com.jigubangbang.admin_service.model.chat_service.BlindNotificationRequestDto;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ public class AdminPostService {
 
     private final AdminPostMapper adminPostMapper;
     private final BlindCountMapper blindCountMapper;
+    private final NotificationServiceClient notificationServiceClient;
 
     // 게시글 목록 조회
     public List<AdminPostDto> getAllPosts(
@@ -47,7 +49,6 @@ public class AdminPostService {
     }
 
     // 블라인드 처리
-    @Transactional
     public void blindPost(int postId, String contentType) {
         AdminPostDto postInfo = adminPostMapper.getPostInfo(postId, contentType);
 
@@ -64,10 +65,18 @@ public class AdminPostService {
         }
         
         blindCountMapper.increaseBlindCount(postInfo.getUserId()); // blind_count + 1
+
+        BlindNotificationRequestDto notification = BlindNotificationRequestDto.builder()
+        .userId(postInfo.getUserId())
+        .message("콘텐츠가 블라인드 처리되었습니다.\n자세한 사항은 1:1 문의를 통해 확인해 주세요.")
+        .relatedUrl("/user/inquiry")
+        .senderId(null)
+        .build();
+
+        notificationServiceClient.createBlindNotification(notification);
     }
 
     // 블라인드 해제
-    @Transactional
     public void unblindPost(int postId, String contentType) {
         AdminPostDto postInfo = adminPostMapper.getPostInfo(postId, contentType);
 

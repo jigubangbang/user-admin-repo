@@ -1,11 +1,13 @@
 package com.jigubangbang.admin_service.service;
 
+import com.jigubangbang.admin_service.chat_service.NotificationServiceClient;
 import com.jigubangbang.admin_service.mapper.AdminGroupMapper;
 import com.jigubangbang.admin_service.mapper.BlindCountMapper;
 import com.jigubangbang.admin_service.model.AdminGroupDto;
+import com.jigubangbang.admin_service.model.chat_service.BlindNotificationRequestDto;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ public class AdminGroupService {
 
     private final AdminGroupMapper adminGroupMapper;
     private final BlindCountMapper blindCountMapper;
+    private final NotificationServiceClient notificationServiceClient;
 
     // 그룹 목록 조회
     public List<AdminGroupDto> getAllGroups(String contentType, String nickname, String status, String keyword,
@@ -40,7 +43,6 @@ public class AdminGroupService {
     }
 
     // 그룹 블라인드 처리
-    @Transactional  
     public void blindGroup(int groupId, String contentType) {
         AdminGroupDto groupInfo = adminGroupMapper.getGroupInfo(groupId, contentType);
         
@@ -55,10 +57,18 @@ public class AdminGroupService {
         }
         
         blindCountMapper.increaseBlindCount(groupInfo.getUserId()); // blind_count + 1 (추가)
+
+        BlindNotificationRequestDto notification = BlindNotificationRequestDto.builder()
+            .userId(groupInfo.getUserId()) 
+            .message("콘텐츠가 블라인드 처리되었습니다.\n자세한 사항은 1:1 문의를 통해 확인해 주세요.")
+            .relatedUrl("/user/inquiry")
+            .senderId(null)
+            .build();
+
+        notificationServiceClient.createBlindNotification(notification);
     }
 
     // 그룹 블라인드 해제
-    @Transactional  
     public void unblindGroup(int groupId, String contentType) {
         AdminGroupDto groupInfo = adminGroupMapper.getGroupInfo(groupId, contentType);
         

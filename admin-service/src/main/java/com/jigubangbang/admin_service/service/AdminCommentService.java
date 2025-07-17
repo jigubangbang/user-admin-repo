@@ -1,11 +1,13 @@
 package com.jigubangbang.admin_service.service;
 
+import com.jigubangbang.admin_service.chat_service.NotificationServiceClient;
 import com.jigubangbang.admin_service.mapper.AdminCommentMapper;
 import com.jigubangbang.admin_service.mapper.BlindCountMapper;
 import com.jigubangbang.admin_service.model.AdminCommentDto;
+import com.jigubangbang.admin_service.model.chat_service.BlindNotificationRequestDto;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ public class AdminCommentService {
 
     private final AdminCommentMapper adminCommentMapper;
     private final BlindCountMapper blindCountMapper;
+    private final NotificationServiceClient notificationServiceClient;
 
     // 댓글 목록 조회
     public List<AdminCommentDto> getAllComments(String contentType, String nickname, String status, String keyword,
@@ -43,7 +46,6 @@ public class AdminCommentService {
     }
 
     // 블라인드 처리
-    @Transactional 
     public void blindComment(int commentId, String contentType) {
         AdminCommentDto commentInfo = adminCommentMapper.getCommentInfo(commentId, contentType);
         
@@ -59,10 +61,18 @@ public class AdminCommentService {
         }
         
         blindCountMapper.increaseBlindCount(commentInfo.getUserId()); // blind_count + 1 
+
+        BlindNotificationRequestDto notification = BlindNotificationRequestDto.builder()
+        .userId(commentInfo.getUserId())
+        .message("콘텐츠가 블라인드 처리되었습니다.\n자세한 사항은 1:1 문의를 통해 확인해 주세요.")
+        .relatedUrl("/user/inquiry")
+        .senderId(null)
+        .build();
+
+        notificationServiceClient.createBlindNotification(notification);
     }
 
     // 블라인드 해제
-    @Transactional  
     public void unblindComment(int commentId, String contentType) {
         AdminCommentDto commentInfo = adminCommentMapper.getCommentInfo(commentId, contentType);
         
