@@ -43,31 +43,31 @@ spec:
             value: "production"
           - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
             value: "health,liveness,readiness"
-          - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_ID
-            valueFrom:
-              secretKeyRef:
-                name: oauth-secrets
-                key: NAVER_CLIENT_ID
-          - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: oauth-secrets
-                key: NAVER_CLIENT_SECRET
-          - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID
+          - name: OAUTH_KAKAO_CLIENT_ID
             valueFrom:
               secretKeyRef:
                 name: oauth-secrets
                 key: KAKAO_CLIENT_ID
-          - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID
+          - name: OAUTH_GOOGLE_CLIENT_ID
             valueFrom:
               secretKeyRef:
                 name: oauth-secrets
                 key: GOOGLE_CLIENT_ID
-          - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET
+          - name: OAUTH_GOOGLE_CLIENT_SECRET
             valueFrom:
               secretKeyRef:
                 name: oauth-secrets
                 key: GOOGLE_CLIENT_SECRET
+          - name: OAUTH_NAVER_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: oauth-secrets
+                key: NAVER_CLIENT_ID
+          - name: OAUTH_NAVER_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: oauth-secrets
+                key: NAVER_CLIENT_SECRET
         resources:
           limits:
             cpu: "500m"
