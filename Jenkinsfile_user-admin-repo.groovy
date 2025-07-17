@@ -20,6 +20,13 @@ pipeline {
 
         // kubectl 설정 파일 경로
         KUBECONFIG_PATH = "${WORKSPACE}/kubeconfig"
+
+        // ==================== 백엔드 SECRET 환경 변수 (Jenkins Credentials에서 로드) ====================
+        OAUTH_KAKAO_CLIENT_ID       = credentials('KAKAO_CLIENT_ID')
+        OAUTH_NAVER_CLIENT_ID       = credentials('NAVER_CLIENT_ID')
+        OAUTH_NAVER_CLIENT_SECRET   = credentials('NAVER_CLIENT_SECRET')
+        OAUTH_GOOGLE_CLIENT_ID      = credentials('GOOGLE_CLIENT_ID')
+        OAUTH_GOOGLE_CLIENT_SECRET  = credentials('GOOGLE_CLIENT_SECRET')
     }
 
     // GitHub 웹훅 트리거 (deployAWS 브랜치에 푸시 시)
@@ -87,6 +94,25 @@ pipeline {
                     sh "KUBECONFIG=${env.KUBECONFIG_PATH} kubectl wait --for=delete deployment/user-admin-repo-deployment -n default --timeout=300s --for=delete || true"
                     echo "--- 기존 배포 삭제 완료 (존재했다면) ---"
                     // --- 기존 배포 강제 삭제 끝 ---
+
+                    echo "--- Creating/Updating OAuth Secrets ---"
+                    sh '''
+                    KUBECONFIG=${KUBECONFIG_PATH} kubectl apply -f - <<EOF
+                    apiVersion: v1
+                    kind: Secret
+                    metadata:
+                      name: oauth-secrets
+                      namespace: default
+                    type: Opaque
+                    stringData:
+                      NAVER_CLIENT_ID: "${OAUTH_NAVER_CLIENT_ID}"
+                      NAVER_CLIENT_SECRET: "${OAUTH_NAVER_CLIENT_SECRET}"
+                      KAKAO_CLIENT_ID: "${OAUTH_KAKAO_CLIENT_ID}"
+                      GOOGLE_CLIENT_ID: "${OAUTH_GOOGLE_CLIENT_ID}"
+                      GOOGLE_CLIENT_SECRET: "${OAUTH_GOOGLE_CLIENT_SECRET}"
+                    EOF
+                    '''
+                    echo "--- OAuth Secrets are set ---"
 
                     sh """
                         KUBECONFIG=${env.KUBECONFIG_PATH} sed -i "s|__ECR_IMAGE_FULL_PATH__|${fullEcrRepoUrl}:${env.IMAGE_TAG}|g" k8s/deployment.yaml
