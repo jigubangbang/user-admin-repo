@@ -33,6 +33,7 @@ build/
 .vscode/
 
 ### 민감 설정파일 ###
-src/main/resources/application.properties
-src/main/resources/application.yml
 .env
+
+# OAuth secrets
+src/main/resources/application-oauth.properties
