@@ -75,19 +75,19 @@ spec:
           requests:
             cpu: "300m"
             memory: "768Mi"
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8081
-          initialDelaySeconds: 90
-          periodSeconds: 20
-          timeoutSeconds: 10
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8081
-          initialDelaySeconds: 60
-          periodSeconds: 15
-          timeoutSeconds: 10
-          failureThreshold: 3
+        # livenessProbe:
+        #   httpGet:
+        #     path: /actuator/health/liveness
+        #     port: 8081
+        #   initialDelaySeconds: 90
+        #   periodSeconds: 20
+        #   timeoutSeconds: 10
+        #   failureThreshold: 3
+        # readinessProbe:
+        #   httpGet:
+        #     path: /actuator/health/readiness
+        #     port: 8081
+        #   initialDelaySeconds: 60
+        #   periodSeconds: 15
+        #   timeoutSeconds: 10
+        #   failureThreshold: 3
