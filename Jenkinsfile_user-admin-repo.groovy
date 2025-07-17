@@ -37,7 +37,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'deployAWS', credentialsId: 'github-user-admin-repo-pat', url: 'https://github.com/jigubangbang/user-admin-repo.git'
+                git branch: 'deployAWS2', credentialsId: 'github-user-admin-repo-pat', url: 'https://github.com/jigubangbang/user-admin-repo.git'
             }
         }
 
