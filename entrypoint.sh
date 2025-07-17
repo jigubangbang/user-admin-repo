@@ -10,7 +10,12 @@ PAYMENT_PID=$!
 echo "Payment Service started with PID: $PAYMENT_PID"
 
 echo "Starting User Service (port 8081)..."
-java -jar /app/user-service.jar &
+java -Doauth.kakao.client-id=${OAUTH_KAKAO_CLIENT_ID} \
+     -Doauth.google.client-id=${OAUTH_GOOGLE_CLIENT_ID} \
+     -Doauth.google.client-secret=${OAUTH_GOOGLE_CLIENT_SECRET} \
+     -Doauth.naver.client-id=${OAUTH_NAVER_CLIENT_ID} \
+     -Doauth.naver.client-secret=${OAUTH_NAVER_CLIENT_SECRET} \
+     -jar /app/user-service.jar &
 USER_PID=$!
 echo "User Service started with PID: $USER_PID"
 
