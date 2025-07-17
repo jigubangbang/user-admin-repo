@@ -96,22 +96,15 @@ pipeline {
                     // --- 기존 배포 강제 삭제 끝 ---
 
                     echo "--- Creating/Updating OAuth Secrets ---"
-                    sh """
-                    KUBECONFIG=${KUBECONFIG_PATH} kubectl apply -f - <<EOF
-                    apiVersion: v1
-                    kind: Secret
-                    metadata:
-                      name: oauth-secrets
-                      namespace: default
-                    type: Opaque
-                    stringData:
-                      NAVER_CLIENT_ID: "${OAUTH_NAVER_CLIENT_ID}"
-                      NAVER_CLIENT_SECRET: "${OAUTH_NAVER_CLIENT_SECRET}"
-                      KAKAO_CLIENT_ID: "${OAUTH_KAKAO_CLIENT_ID}"
-                      GOOGLE_CLIENT_ID: "${OAUTH_GOOGLE_CLIENT_ID}"
-                      GOOGLE_CLIENT_SECRET: "${OAUTH_GOOGLE_CLIENT_SECRET}"
-                    EOF
-                    """
+                    sh '''
+                    KUBECONFIG=${KUBECONFIG_PATH} kubectl create secret generic oauth-secrets \
+                      --from-literal=NAVER_CLIENT_ID="${OAUTH_NAVER_CLIENT_ID}" \
+                      --from-literal=NAVER_CLIENT_SECRET="${OAUTH_NAVER_CLIENT_SECRET}" \
+                      --from-literal=KAKAO_CLIENT_ID="${OAUTH_KAKAO_CLIENT_ID}" \
+                      --from-literal=GOOGLE_CLIENT_ID="${OAUTH_GOOGLE_CLIENT_ID}" \
+                      --from-literal=GOOGLE_CLIENT_SECRET="${OAUTH_GOOGLE_CLIENT_SECRET}" \
+                      --dry-run=client -o yaml | KUBECONFIG=${KUBECONFIG_PATH} kubectl apply -f -
+                    '''
                     echo "--- OAuth Secrets are set ---"
 
                     sh """
