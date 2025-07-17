@@ -96,7 +96,7 @@ pipeline {
                     // --- 기존 배포 강제 삭제 끝 ---
 
                     echo "--- Creating/Updating OAuth Secrets ---"
-                    sh '''
+                    sh """
                     KUBECONFIG=${KUBECONFIG_PATH} kubectl apply -f - <<EOF
                     apiVersion: v1
                     kind: Secret
@@ -111,7 +111,7 @@ pipeline {
                       GOOGLE_CLIENT_ID: "${OAUTH_GOOGLE_CLIENT_ID}"
                       GOOGLE_CLIENT_SECRET: "${OAUTH_GOOGLE_CLIENT_SECRET}"
                     EOF
-                    '''
+                    """
                     echo "--- OAuth Secrets are set ---"
 
                     sh """
