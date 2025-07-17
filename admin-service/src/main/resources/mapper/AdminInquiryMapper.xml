@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jigubangbang.admin_service.mapper.AdminInquiryMapper">
+  <!-- 전체 조회 -->
+  <select id="getAllInquiries" resultType="com.jigubangbang.admin_service.model.AdminInquiryDto">
+    SELECT
+      i.id,
+      u.user_id AS userId,
+      u.nickname,
+      i.category,
+      i.title,
+      i.content,       
+      i.attachment,
+      i.status,
+      i.created_at AS createdAt,
+      i.admin_reply AS adminReply,    
+      i.admin_id AS adminId,          
+    i.replied_at AS repliedAt 
+    FROM inquiry i
+    JOIN user u ON i.user_id = u.user_id
+    ORDER BY i.created_at DESC
+  </select>
+
+  <!-- 상세 조회 -->
+  <select id="getInquiryById" resultType="com.jigubangbang.admin_service.model.AdminInquiryDto">
+    SELECT
+      i.id,
+      u.user_id AS userId,
+      u.nickname,
+      i.category,
+      i.title,
+      i.content,
+      i.attachment,
+      i.status,
+      i.created_at AS createdAt,
+      i.admin_reply AS adminReply,  
+      i.admin_id AS adminId,         
+      i.replied_at AS repliedAt 
+    FROM inquiry i
+    JOIN user u ON i.user_id = u.user_id
+    WHERE i.id = #{inquiryId}
+  </select>
+
+  <!-- 답변 등록 -->
+  <update id="updateInquiryReply">
+    UPDATE inquiry
+    SET
+      admin_reply = #{reply},
+      admin_id = #{adminId},
+      replied_at = NOW(),
+      status = 'REPLIED'
+    WHERE id = #{inquiryId}
+  </update>
+</mapper>

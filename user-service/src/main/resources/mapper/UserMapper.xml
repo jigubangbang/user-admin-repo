@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.jigubangbang.user_service.mapper.UserMapper">
     <!-- Security 인증용 사용자 정보 조회 -->
@@ -10,7 +10,10 @@
             user_id AS id,
             password,
             role,
-            user_status AS status
+            user_status AS status,
+            banned_until AS bannedUntil,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount 
         FROM user
         WHERE user_id = #{userId}
     </select>
@@ -20,10 +23,29 @@
         SELECT
             user_id AS id,
             name,
-            role
+            role,
+            nickname,
+            email,
+            tel,
+            profile_image AS profileImage,
+            user_status AS userStatus,
+            is_premium AS isPremium,
+            provider,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount,
+            banned_until AS bannedUntil
         FROM user
         WHERE user_id = #{userId}
     </select>
+
+    <!-- 정지 회원 복구 -->
+    <update id="restoreUserToActive">
+        UPDATE user
+        SET user_status = 'ACTIVE',
+            banned_until = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
 
     <!-- 회원가입 -->
     <insert id="insertUser" parameterType="com.jigubangbang.user_service.model.RegisterRequestDto">
@@ -35,7 +57,9 @@
             email,
             tel,
             agreed_required,
-            agreed_optional
+            agreed_optional,
+            provider,
+            provider_id
         ) VALUES (
             #{userId},
             #{password},
@@ -44,7 +68,9 @@
             #{email},
             #{tel},
             #{agreedRequired},
-            #{agreedOptional}
+            #{agreedOptional},
+            #{provider},
+            #{providerId}
         )
     </insert>
 
@@ -61,4 +87,172 @@
             SELECT 1 FROM user WHERE email = #{email}
         )
     </select>
+
+    <!-- 이메일로 사용자 조회 (소셜 로그인) -->
+    <select id="findByEmail" resultType="com.jigubangbang.user_service.model.UserDto">
+        SELECT
+            user_id AS id,
+            name,
+            role,
+            nickname,
+            email,
+            tel,
+            profile_image AS profileImage,
+            user_status AS userStatus,
+            is_premium AS isPremium,
+            provider,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount,
+            banned_until AS bannedUntil
+        FROM user
+        WHERE email = #{email}
+    </select>
+
+    <!-- 이메일과 provider로 사용자 조회 (소셜 로그인) -->
+    <select id="findByEmailAndProvider" resultType="com.jigubangbang.user_service.model.UserDto">
+        SELECT
+            user_id AS id,
+            name,
+            role,
+            nickname,
+            email,
+            tel,
+            profile_image AS profileImage,
+            user_status AS userStatus,
+            is_premium AS isPremium,
+            provider,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount,
+            banned_until AS bannedUntil
+        FROM user
+        WHERE email = #{email} AND provider = #{provider}
+    </select>
+
+    <!-- 사용자 상태 확인 (소셜 로그인) -->
+    <select id="findAuthByEmail" resultType="com.jigubangbang.user_service.model.AuthDto">
+        SELECT
+            user_id AS id,
+            password,
+            role,
+            user_status AS status,
+            banned_until AS bannedUntil,
+            blind_count AS blindCount,
+            last_blind_count AS lastBlindCount
+        FROM user
+        WHERE email = #{email}
+    </select>
+
+    <!-- 이름 + 이메일로 사용자 조회 (아이디 찾기) -->
+    <select id="findByNameAndEmail" resultType="com.jigubangbang.user_service.model.FindIdResponseDto">
+        SELECT
+            user_id AS userId,
+            provider
+        FROM user
+        WHERE name = #{name}
+        AND email = #{email}
+    </select>
+
+    <!-- 아이디 + 이름 + 이메일로 사용자 조회 (비밀번호 찾기) -->
+    <select id="findByUserIdNameEmail" resultType="com.jigubangbang.user_service.model.FindPwdResponseDto">
+        SELECT
+            user_id AS userId,
+            provider,
+            temp_pwd_at AS tempPwdAt
+        FROM user
+        WHERE user_id = #{userId}
+        AND name = #{name}
+        AND email = #{email}
+    </select>
+
+    <!-- 임시 비밀번호 발급 -->
+    <update id="updatePasswordAndTempPwdAt">
+        UPDATE user
+        SET password = #{password},
+            temp_pwd_at = #{tempPwdAt}
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 회원 정보 수정 -->
+    <update id="updateUserInfo">
+        UPDATE user
+        SET
+            name = #{dto.name},
+            tel = #{dto.tel},
+            <if test="dto.nickname != null">
+                nickname = #{dto.nickname},
+                nickname_updated_at = CURRENT_TIMESTAMP,
+            </if>
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 닉네임 최근 변경일 조회 -->
+    <select id="getNicknameUpdatedAt" resultType="java.time.LocalDateTime">
+        SELECT nickname_updated_at
+        FROM user
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 현재 비밀번호 조회 -->
+    <select id="getCurrentPassword" resultType="string">
+        SELECT password
+        FROM user
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 비밀번호 변경 -->
+    <update id="updatePassword">
+        UPDATE user
+        SET password = #{newPassword},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 이메일 변경 -->
+    <update id="updateEmail">
+        UPDATE user
+        SET email = #{newEmail},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 탈퇴 이력 저장 -->
+    <insert id="insertWithdrawal">
+        INSERT INTO withdrawal (
+            user_id,
+            reason_code,
+            reason_text,
+            withdrawal_type
+        ) VALUES (
+            #{userId},
+            #{reasonCode},
+            #{reasonText},
+            #{withdrawalType}
+        )
+    </insert>
+
+    <!-- 회원 상태 WITHDRAWN으로 변경 -->
+   <update id="updateUserAsWithdrawn">
+        UPDATE user
+        SET user_status = 'WITHDRAWN',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 상태 및 정지 기간 설정 -->
+    <update id="updateStatusAndBannedUntil">
+        UPDATE user
+        SET user_status = #{status},
+            banned_until = #{bannedUntil},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 마지막 블라인드 횟수 저장 -->
+    <update id="updateLastBlindCount">
+        UPDATE user
+        SET last_blind_count = #{lastBlindCount},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
 </mapper>

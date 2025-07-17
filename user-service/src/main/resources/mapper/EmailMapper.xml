@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jigubangbang.user_service.mapper.EmailMapper">
+  <!-- 인증 코드 저장 -->
+  <insert id="insertOrUpdateCode">
+    INSERT INTO email_veri (email, code, is_verified, requested_at, expires_at)
+    VALUES (#{email}, #{code}, FALSE, NOW(), #{expiresAt,jdbcType=TIMESTAMP})
+    ON DUPLICATE KEY UPDATE
+      code = #{code},
+      is_verified = FALSE,
+      requested_at = NOW(),
+      expires_at = #{expiresAt,jdbcType=TIMESTAMP}
+  </insert>
+
+  <!-- 이메일로 인증 정보 조회 -->
+  <select id="findByEmail" resultType="com.jigubangbang.user_service.model.EmailDto">
+    SELECT 
+      email, 
+      code, 
+      is_verified AS isVerified,
+      expires_at AS expiresAt
+    FROM email_veri
+    WHERE email = #{email}
+  </select>
+
+  <!-- 인증 성공 처리 -->
+  <update id="markEmailAsVerified">
+    UPDATE email_veri
+    SET is_verified = TRUE
+    WHERE email = #{email}
+  </update>
+</mapper>

@@ -1,7 +1,9 @@
 package com.jigubangbang.user_service.security;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.crypto.SecretKey;
@@ -26,16 +28,16 @@ public class JwtTokenProvider {
     private final long refreshTokenValidityMs;
 
     public JwtTokenProvider(
-        @Value("${jwt.secret}") String secretString,
-        @Value("${jwt.access-token-validity:7200000}") long accessTokenValidityMsConfig,
-        @Value("${jwt.refresh-token-validity:604800000}") long refreshTokenValidityMsConfig
-    ) {
+            @Value("${jwt.secret}") String secretString,
+            @Value("${jwt.access-token-validity:7200000}") long accessTokenValidityMsConfig,
+            @Value("${jwt.refresh-token-validity:604800000}") long refreshTokenValidityMsConfig) {
         byte[] keyBytes = Decoders.BASE64.decode(secretString);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.accessTokenValidityMs = accessTokenValidityMsConfig;
         this.refreshTokenValidityMs = refreshTokenValidityMsConfig;
 
-        logger.info("JWT Initialized: HS512 / Access Exp: {}ms / Refresh Exp: {}ms", accessTokenValidityMs, refreshTokenValidityMs);
+        logger.info("JWT Initialized: HS512 / Access Exp: {}ms / Refresh Exp: {}ms", accessTokenValidityMs,
+                refreshTokenValidityMs);
     }
 
     // Access Token 생성
@@ -45,24 +47,37 @@ public class JwtTokenProvider {
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("name", user.getName());
+        claims.put("provider", user.getProvider());
 
+        List<String> roles = new ArrayList<>();
+        
         String role = user.getRole();
         if (role == null || role.isBlank()) {
-            role = "ROLE_USER";
+            roles.add("ROLE_USER");
             logger.warn("User {} has null or empty role, defaulting to ROLE_USER", user.getId());
-        } else if (!role.startsWith("ROLE_")) {
-            role = "ROLE_" + role.toUpperCase();
+        } else {
+            role = role.toUpperCase();
+            if (!role.startsWith("ROLE_")) {
+                role = "ROLE_" + role;
+            }
+            roles.add(role);
+
+            // 관리자일 경우 ROLE_USER도 추가
+            if ("ROLE_ADMIN".equals(role)) {
+                roles.add("ROLE_USER");
+            }
         }
-        claims.put("role", role);
+
+        claims.put("role", roles);
         claims.put("type", "access");
 
         return Jwts.builder()
-            .setSubject(user.getId())
-            .addClaims(claims)
-            .setIssuedAt(now)
-            .setExpiration(expiryDate)
-            .signWith(key, SignatureAlgorithm.HS512)
-            .compact();
+                .setSubject(user.getId())
+                .addClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
     }
 
     // Refresh Token 생성
@@ -71,12 +86,12 @@ public class JwtTokenProvider {
         Date expiryDate = new Date(now.getTime() + refreshTokenValidityMs);
 
         return Jwts.builder()
-            .setSubject(userId)
-            .claim("type", "refresh")
-            .setIssuedAt(now)
-            .setExpiration(expiryDate)
-            .signWith(key, SignatureAlgorithm.HS512)
-            .compact();
+                .setSubject(userId)
+                .claim("type", "refresh")
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
     }
 
     // 토큰에서 userId(subject) 추출
@@ -128,6 +143,7 @@ public class JwtTokenProvider {
                 .build()
                 .parseClaimsJws(token);
     }
+
     // 토큰에서 사용자 이름 추출
     public String getNameFromToken(String token) {
         return (String) parseClaims(token).getBody().get("name");

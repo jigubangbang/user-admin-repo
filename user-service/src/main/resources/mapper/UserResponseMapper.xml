@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace를 UserResponseMapper 인터페이스의 전체 경로와 일치시킵니다. -->
+<mapper namespace="com.jigubangbang.user_service.mapper.UserResponseMapper">
+
+    <!-- resultType을 UserResponseDto로 직접 지정합니다. -->
+    <select id="findForPaymentService" parameterType="string" resultType="com.jigubangbang.user_service.model.UserResponseDto">
+        SELECT
+            user_id         AS userId,
+            email,
+            nickname,
+            customer_uid    AS customerUid,
+            is_premium      AS isPremium
+        FROM
+            user
+        WHERE
+            user_id = #{userId}
+    </select>
+
+    <update id="updatePremiumInfo">
+        UPDATE user
+        <set>
+            customer_uid = #{customerUid},
+            is_premium = #{premium},
+        </set>
+        WHERE
+            user_id = #{userId}
+    </update>
+
+</mapper>
