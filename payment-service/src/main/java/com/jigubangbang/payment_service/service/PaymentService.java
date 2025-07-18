@@ -62,24 +62,19 @@ public class PaymentService {
     }
 
     public PremiumStatusResponseDto getLatestPremiumStatusForUser(String userId) {
-        String customerUid = null;
-        try {
-            // 1. 사용자 정보에서 customerUid 가져오기 (실패 가능성 있음)
-            UserResponseDto userInfo = userServiceClient.getUserInfo(userId);
-            if (userInfo != null) {
-                customerUid = userInfo.getCustomerUid();
-            }
-        } catch (Exception e) {
-            log.error("user-service에서 사용자 정보 조회 실패: userId={}. customerUid 없이 계속 진행합니다.", userId, e);
-            // customerUid를 null로 유지하고 계속 진행
-        }
+        // 1. 사용자 정보에서 customerUid 가져오기
+        UserResponseDto userInfo = userServiceClient.getUserInfo(userId);
+        String customerUid = userInfo != null ? userInfo.getCustomerUid() : null;
 
         // 2. 프리미엄 구독 이력 가져오기
         PremiumHistoryDto premiumHistory = premiumHistoryMapper.findLatestByUserId(userId)
-                .orElseGet(() -> PremiumHistoryDto.builder()
-                        .userId(userId)
-                        .isActive(false)
-                        .build());
+                .orElseGet(() -> {
+                    // 구독 기록이 없는 경우, 기본값으로 isActive: false를 가진 DTO 반환
+                    return PremiumHistoryDto.builder()
+                            .userId(userId)
+                            .isActive(false)
+                            .build();
+                });
         
         // 3. PremiumStatusResponseDto에 담아 반환
         return PremiumStatusResponseDto.builder()
