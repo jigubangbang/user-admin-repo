@@ -62,19 +62,33 @@ public class PaymentService {
     }
 
     public PremiumStatusResponseDto getLatestPremiumStatusForUser(String userId) {
+        log.info("사용자 [{}]의 프리미엄 상태 조회를 시작합니다.", userId);
+
         // 1. 사용자 정보에서 customerUid 가져오기
         UserResponseDto userInfo = userServiceClient.getUserInfo(userId);
         String customerUid = userInfo != null ? userInfo.getCustomerUid() : null;
+        log.info("user-service로부터 받은 customerUid: {}", customerUid);
 
         // 2. 프리미엄 구독 이력 가져오기
-        PremiumHistoryDto premiumHistory = premiumHistoryMapper.findLatestByUserId(userId)
-                .orElseGet(() -> {
-                    // 구독 기록이 없는 경우, 기본값으로 isActive: false를 가진 DTO 반환
-                    return PremiumHistoryDto.builder()
-                            .userId(userId)
-                            .isActive(false)
-                            .build();
-                });
+        Optional<PremiumHistoryDto> latestHistoryOpt = premiumHistoryMapper.findLatestByUserId(userId);
+
+        if (latestHistoryOpt.isEmpty()) {
+            log.warn("사용자 [{}]에 대한 프리미엄 구독 기록을 찾을 수 없습니다.", userId);
+            PremiumHistoryDto emptyHistory = PremiumHistoryDto.builder()
+                    .userId(userId)
+                    .isActive(false)
+                    .build();
+            return PremiumStatusResponseDto.builder()
+                    .premiumHistory(emptyHistory)
+                    .customerUid(customerUid)
+                    .build();
+        }
+
+        PremiumHistoryDto premiumHistory = latestHistoryOpt.get();
+
+        // ======================= 디버깅 로그 추가 =======================
+        log.info("DB에서 조회된 가장 최근 premium_log 데이터: {}", premiumHistory.toString());
+        // ===========================================================
         
         // 3. PremiumStatusResponseDto에 담아 반환
         return PremiumStatusResponseDto.builder()
