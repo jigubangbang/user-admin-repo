@@ -8,13 +8,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.jigubangbang.payment_service.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.jigubangbang.payment_service.client.PortoneClient;
-import com.jigubangbang.payment_service.client.UserServiceClient;
 import com.jigubangbang.payment_service.mapper.PaymentHistoryMapper;
 import com.jigubangbang.payment_service.mapper.PremiumHistoryMapper;
 import com.jigubangbang.payment_service.model.PremiumStatusResponseDto;
@@ -36,7 +36,7 @@ public class PaymentService {
     private final PaymentHistoryMapper paymentHistoryMapper;
     private final PremiumHistoryMapper premiumHistoryMapper;
     private final PortoneClient portoneClient;
-    private final UserServiceClient userServiceClient;
+    private final UserMapper userMapper;
 
     @Value("${portone.webhook-url}")
     private String portoneWebhookUrl;
@@ -55,7 +55,7 @@ public class PaymentService {
         return merchantUid;
     }
 
-    
+
 
     public Optional<PremiumHistoryDto> getActiveSubscription(String userId) {
         return premiumHistoryMapper.findActiveByUserId(userId);
@@ -65,7 +65,7 @@ public class PaymentService {
         log.info("사용자 [{}]의 프리미엄 상태 조회를 시작합니다.", userId);
 
         // 1. 사용자 정보에서 customerUid 가져오기
-        UserResponseDto userInfo = userServiceClient.getUserInfo(userId);
+        UserResponseDto userInfo = userMapper.findById(userId);
         String customerUid = userInfo != null ? userInfo.getCustomerUid() : null;
         log.info("user-service로부터 받은 customerUid: {}", customerUid);
 
@@ -89,7 +89,7 @@ public class PaymentService {
         // ======================= 디버깅 로그 추가 =======================
         log.info("DB에서 조회된 가장 최근 premium_log 데이터: {}", premiumHistory.toString());
         // ===========================================================
-        
+
         // 3. PremiumStatusResponseDto에 담아 반환
         return PremiumStatusResponseDto.builder()
                 .premiumHistory(premiumHistory)
@@ -108,12 +108,12 @@ public class PaymentService {
         try {
             // 1. user-service에 빌링키(customer_uid)만 null로 업데이트 요청
             //    is_premium 상태는 유지하여, 만료일까지 혜택을 보장합니다.
-            UserResponseDto userInfo = userServiceClient.getUserInfo(userId); // 현재 사용자 정보 조회
+            UserResponseDto userInfo = userMapper.findById(userId); // 현재 사용자 정보 조회
             UserPremiumUpdateRequestDto userUpdateRequest = UserPremiumUpdateRequestDto.builder()
                     .customerUid(null) // 빌링키만 null로 설정
                     .isPremium(userInfo.isPremium()) // 현재 is_premium 상태 유지
                     .build();
-            userServiceClient.updateUserPremiumStatus(userId, userUpdateRequest);
+            userMapper.updateUserPremium(userId, userUpdateRequest);
             log.info("사용자 [{}]의 빌링키 제거 완료. 다음 자동 결제가 중단됩니다.", userId);
 
             // 2. premium_log에서 현재 활성 구독을 찾아 is_active를 false로 업데이트
@@ -164,7 +164,7 @@ public class PaymentService {
             UserPremiumUpdateRequestDto userUpdateRequest = UserPremiumUpdateRequestDto.builder()
                     .customerUid(newCustomerUid)
                     .build();
-            userServiceClient.updateUserPremiumStatus(userId, userUpdateRequest);
+            userMapper.updateUserPremium(userId, userUpdateRequest);
             log.info("사용자 [{}]의 빌링키를 성공적으로 업데이트했습니다.", userId);
 
             // 5. payment 테이블에 카드 정보 업데이트 내역 기록
@@ -196,7 +196,7 @@ public class PaymentService {
 
         } catch (Exception e) {
             log.error("결제 수단 변경 처리 중 오류 발생: userId={}", userId, e);
-            // 카드 ���록 과정 자체에서 오류 발생 시, 결제가 되었을 수 있으므로 환불 시도
+            // 카드 등록 과정 자체에서 오류 발생 시, 결제가 되었을 수 있으므로 환불 시도
             try {
                 log.warn("결제 수단 변경 프로세스 실패로 인한 자동 환불 시도: imp_uid={}", impUid);
                 String accessToken = portoneClient.getAccessToken();
@@ -268,7 +268,7 @@ public class PaymentService {
                     .isPremium(true)
                     .customerUid(customerUid)
                     .build();
-            userServiceClient.updateUserPremiumStatus(userId, userUpdateRequest);
+            userMapper.updateUserPremium(userId, userUpdateRequest);
             log.info("user-service에 사용자 [{}] 프리미엄 상태 및 빌링키 업데이트 완료", userId);
         } catch (Exception e) {
             log.error("user-service 호출 중 오류 발생", e);
@@ -301,7 +301,7 @@ public class PaymentService {
             log.info("사용자 [{}]에 대한 자동 결제를 시도합니다.", userId);
 
             try {
-                UserResponseDto userInfo = userServiceClient.getUserInfo(userId);
+                UserResponseDto userInfo = userMapper.findById(userId);
                 String billingKey = userInfo.getCustomerUid();
 
                 if (billingKey == null || billingKey.isBlank()) {
@@ -380,7 +380,7 @@ public class PaymentService {
             Map<String, String> refundPayload = new HashMap<>();
             refundPayload.put("imp_uid", paymentToRefund.getImpUid());
             // 필요 시, 부분 환불을 위한 amount, reason 등을 추가할 수 있습니다.
-            
+
             portoneClient.requestRefund(refundPayload, accessToken);
             log.info("Portone 환불 API 호출 성공: imp_uid={}", paymentToRefund.getImpUid());
 
@@ -404,7 +404,7 @@ public class PaymentService {
                     .isPremium(false)
                     .customerUid(null) // 빌링키도 함께 제거
                     .build();
-            userServiceClient.updateUserPremiumStatus(userId, userUpdateRequest);
+            userMapper.updateUserPremium(userId, userUpdateRequest);
             log.info("user-service에 프리미엄 해제 및 빌링키 제거 요청 완료");
 
         } catch (Exception e) {
