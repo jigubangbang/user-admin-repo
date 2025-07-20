@@ -92,7 +92,11 @@ public class InquiryController {
             @RequestPart("dto") @Valid CreateInquiryDto dto,
             @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
 
+        // 기존 문의 정보 조회
+        InquiryDto existingInquiry = inquiryService.getInquiryDetail(id, user.getUsername());
+
         if (files != null && !files.isEmpty()) {
+            // 새 파일이 있으면 새 파일로 교체
             List<CreateInquiryDto.AttachmentInfo> attachmentInfos = new ArrayList<>();
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
@@ -112,6 +116,9 @@ public class InquiryController {
             if (!attachmentInfos.isEmpty()) {
                 dto.setAttachment(convertToJsonString(attachmentInfos));
             }
+        } else {
+            // 새 파일이 없으면 기존 첨부파일 유지
+            dto.setAttachment(existingInquiry.getAttachment());
         }
 
         inquiryService.updateInquiry(id, user.getUsername(), dto);
