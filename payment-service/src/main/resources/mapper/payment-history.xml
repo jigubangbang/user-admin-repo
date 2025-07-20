@@ -4,6 +4,7 @@
 
 <mapper namespace="com.jigubangbang.payment_service.mapper.PaymentHistoryMapper">
 
+    <!-- 결제 이력 생성 -->
     <insert id="createPaymentHistory" parameterType="com.jigubangbang.payment_service.model.PaymentHistoryDto">
         INSERT INTO payment
             (user_id, imp_uid, merchant_uid, amount, pay_status, paid_at, pay_method, card_name, card_number_masked)
@@ -11,38 +12,40 @@
             (#{userId}, #{impUid}, #{merchantUid}, #{amount}, #{payStatus}, NOW(), #{payMethod}, #{cardName}, #{cardNumberMasked})
     </insert>
 
+    <!-- merchantUid로 결제 이력 조회 -->
     <select id="findByMerchantUid" parameterType="string" resultType="com.jigubangbang.payment_service.model.PaymentHistoryDto">
         SELECT
             id,
-            user_id,
-            imp_uid,
-            merchant_uid,
+            user_id AS userId,
+            imp_uid AS impUid,
+            merchant_uid AS merchantUid,
             amount,
-            pay_status,
-            paid_at,
-            cancelled_at,
-            pay_method,
-            card_name,
-            card_number_masked
+            pay_status AS payStatus,
+            paid_at AS paidAt,
+            cancelled_at AS cancelledAt,
+            pay_method AS payMethod,
+            card_name AS cardName,
+            card_number_masked AS cardNumberMasked
         FROM
             payment
         WHERE
             merchant_uid = #{merchantUid}
     </select>
 
+    <!-- userId로 결제 이력 조회 -->
     <select id="findByUserId" parameterType="string" resultType="com.jigubangbang.payment_service.model.PaymentHistoryDto">
         SELECT
             id,
-            user_id,
-            imp_uid,
-            merchant_uid,
+            user_id AS userId,
+            imp_uid AS impUid,
+            merchant_uid AS merchantUid,
             amount,
-            pay_status,
-            paid_at,
-            cancelled_at,
-            pay_method,
-            card_name,
-            card_number_masked
+            pay_status AS payStatus,
+            paid_at AS paidAt,
+            cancelled_at AS cancelledAt,
+            pay_method AS payMethod,
+            card_name AS cardName,
+            card_number_masked AS cardNumberMasked
         FROM
             payment
         WHERE
@@ -51,6 +54,7 @@
             paid_at DESC
     </select>
 
+    <!-- 결제 상태 업데이트 -->
     <update id="updatePaymentStatus" parameterType="com.jigubangbang.payment_service.model.PaymentHistoryDto">
         UPDATE
             payment
