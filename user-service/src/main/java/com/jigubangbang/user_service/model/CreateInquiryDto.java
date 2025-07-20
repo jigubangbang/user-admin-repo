@@ -24,6 +24,8 @@ public class CreateInquiryDto {
     private List<AttachmentInfo> attachments;
     private String attachment; // DB 저장용 JSON 문자열
 
+    private List<AttachmentInfo> keepExistingFiles;
+    
     @Getter
     @Setter
     public static class AttachmentInfo {
