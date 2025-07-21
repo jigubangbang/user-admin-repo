@@ -245,30 +245,3 @@ portone.api-secret= ...
 # Jackson Timezone Setting
 spring.jackson.time-zone=UTC
 ```
-
-## 📁 프로젝트 Repository 구조
-
-### 🏗️ **Infrastructure & Core Services**
-| Repository | 포함 서비스 | 담당자 |
-|---|---|---|
-| **config** | 설정 관리 | 팀장 이설영 |
-| **infra-platform** | config-server, eureka-server, api-gateway | 팀장 이설영 |
-
-### 💼 **Business Services**
-| Repository | 포함 서비스 | 담당자 |
-|---|---|---|
-| **user-admin-repo** | user-service, admin-service, payment-service | 박나혜, 장준환 |
-| **chat-service** | chat-service, notification | 이설영 |
-| **qc-home-repo** | quest-service, com-service | 권민정 |
-| **feed-mypage-repo** | feed-service, mypage-service | 남승현 |
-
----
-
-**⚡ 빠른 시작 가이드**
-```bash
-# 1. 인프라 서비스 실행 (config, eureka)
-# 2. user-admin-repo의 서비스들 실행
-cd user-service && ./mvnw spring-boot:run &
-cd ../admin-service && ./mvnw spring-boot:run &
-cd ../payment-service && ./mvnw spring-boot:run &
-```
