@@ -50,7 +50,60 @@
 
 ## 🔐 핵심 기술적 도전과제
 
-### 1. Portone 정기 결제 플로우
+### 1. Spring Security 기반 JWT 인증 및 인가
+**문제점**: 마이크로서비스 환경에서 사용자 인증 및 권한 부여를 효율적이고 안전하게 처리해야 함.
+**해결방안**: Spring Security와 JWT(JSON Web Token)를 활용하여 Stateless한 인증 시스템 구축. API Gateway에서 1차 인증/인가를 수행하고, User Service에서 상세 권한 검증 및 토큰 발급/갱신을 담당.
+
+```java
+// SecurityConfig.java
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    return http
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/auth/**",  "/public/**", "/", "/health-check", "/actuator/**", "/user/internal/**").permitAll()
+            .anyRequest().authenticated()
+        )
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+        .build();
+}
+```
+
+### 2. Refresh Token을 이용한 Access Token 갱신
+**문제점**: Access Token의 짧은 유효 기간으로 인한 잦은 재로그인 필요성과 보안 취약점.
+**해결방안**: Refresh Token을 도입하여 Access Token 만료 시 사용자 재로그인 없이 새로운 Access Token을 발급. Refresh Token은 긴 유효 기간을 가지며, 탈취 시 재사용 방지 및 강제 만료 처리 로직 구현.
+
+```java
+// AuthService.java - refreshAccessToken method
+public LoginResponseDto refreshAccessToken(String tokenHeader) {
+    String token = tokenHeader.replace("Bearer ", "");
+    if (!jwtTokenProvider.validateToken(token) || !"refresh".equals(jwtTokenProvider.getTokenType(token))) {
+        throw new IllegalArgumentException("유효하지 않은 RefreshToken입니다.");
+    }
+    String userId = jwtTokenProvider.getUserIdFromToken(token);
+    UserDto user = userMapper.findUserById(userId);
+    String newAccessToken = jwtTokenProvider.generateAccessToken(user);
+    return LoginResponseDto.of(newAccessToken, token, user);
+}
+```
+
+### 3. 소셜 로그인 (OAuth2) 연동
+**문제점**: 다양한 소셜 플랫폼(Google, Naver, Kakao)을 통한 간편 로그인 기능을 제공해야 함.
+**해결방안**: Spring Security OAuth2 Client를 활용하여 각 소셜 플랫폼의 인증 흐름을 통합하고, 사용자 정보를 서비스에 맞게 매핑하여 JWT 토큰 발급.
+
+```java
+// AuthController.java - socialLogin method
+@PostMapping("/{provider}")
+public ResponseEntity<?> socialLogin(
+        @PathVariable String provider,
+        @RequestBody SocialRequestDto request) {
+    LoginResponseDto response = authService.socialLogin(request.getCode(), provider);
+    return ResponseEntity.ok(response);
+}
+```
+
+### 4. Portone 정기 결제 플로우
 **문제점**: 사용자의 최초 결제와 2회차 이후의 자동 결제를 안정적으로 처리하고 상태를 동기화해야 함.
 **해결방안**: `결제 준비` -> `최초 결제(빌링키 발급)` -> `웹훅 수신` -> `자동 결제 스케줄링`으로 이어지는 상태 관리 플로우 구축
 
@@ -65,7 +118,7 @@ if ("PAID".equals(status)) {
 }
 ```
 
-### 2. 스케줄러를 이용한 자동 결제
+### 5. 스케줄러를 이용한 자동 결제
 **문제점**: 매월 구독 만료일이 다가오는 사용자를 대상으로 정확한 시점에 자동 결제를 실행해야 함.
 **해결방안**: Spring Scheduler(`@Scheduled`)를 사용하여 매일 특정 시각에 만료 예정인 사용자를 조회하고, Portone API를 통해 자동 결제 요청
 
