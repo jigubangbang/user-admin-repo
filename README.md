@@ -1,98 +1,233 @@
-# User, Admin, Payment Repository
+# User-Admin-Repo Repository
 
-이 레포지토리는 Jigubangbang 프로젝트의 사용자, 관리자, 결제 관련 마이크로서비스를 관리합니다.
+**Core Business Services for User Management and Monetization**
+: *User Service, Admin Service, Payment Service*
 
-## 개요
+이 레포지토리는 **Jigubangbang✈** 프로젝트의 핵심 비즈니스 로직인 사용자, 관리자, 결제 도메인을 담당하는 마이크로서비스들을 관리합니다.
 
-MSA(Microservice Architecture) 구조에 따라 각 도메인 별 기능이 분리된 서비스들로 구성되어 있습니다.
+## 📋 프로젝트 개요
 
--   **User Service:** 사용자 인증, 회원 정보 관리, 프로필 등 사용자 관련 모든 기능을 담당합니다.
--   **Admin Service:** 관리자 대시보드, 사용자 관리, 콘텐츠 제어 등 관리자 관련 기능을 담당합니다.
--   **Payment Service:** 프리미엄 구독 결제, 결제 내역 조회, 환불 처리 등 결제 관련 모든 기능을 담당합니다.
+**Jigubangbang**은 Spring Cloud 기반의 마이크로서비스 여행 커뮤니티 플랫폼입니다.
+- **13개 마이크로서비스** 구성 (3개 인프라 + 9개 비즈니스 + 1개 프론트엔드)
+- **실시간 통신, 결제 시스템, 게이미피케이션 요소** 통합
+- **AWS 클라우드 네이티브** 아키텍처
 
-## 주요 기술 스택
+## 🏛️ 시스템 아키텍처
 
--   **Backend:** Java 17, Spring Boot 3, Spring Cloud, MyBatis, MySQL, Lombok, Feign Client
--   **Frontend:** React, Vite, Axios, Portone (아임포트)
--   **Infra:** Eureka, Spring Cloud Gateway, Spring Cloud Config
+![Domain Architecture](https://user-images.githubusercontent.com/87534343/285595333-69c19cf3-6353-4b32-a1a9-85569c31a15e.png)
+*위 이미지는 전체 도메인 아키텍처입니다.*
+
+## 🎯 서비스 구성
+
+### 1. 👤 User Service
+**사용자 도메인 총괄**
+- **인증/인가**: JWT 기반 회원가입, 로그인, 소셜 로그인(Google, Naver, Kakao) 처리
+- **프로필 관리**: 사용자 프로필 정보, 프로필 이미지, 여행 스타일 등 관리
+- **상호작용**: 다른 사용자 팔로우/언팔로우, 사용자 검색 기능
+
+```yaml
+# 주요 기능
+- JWT 토큰 생성 및 검증
+- OAuth2 소셜 로그인 연동
+- 사용자 정보 CRUD
+- Feign Client를 통한 타 서비스와의 통신
+```
+
+### 2. 🛠️ Admin Service
+**관리자 기능 및 시스템 운영**
+- **관리자 대시보드**: 전체 사용자, 결제, 콘텐츠 현황 모니터링
+- **사용자 관리**: 사용자 제재(활동 정지), 권한 변경 등
+- **콘텐츠 관리**: 부적절한 게시물 및 댓글 숨김(블라인드) 처리
+
+```yaml
+# 주요 기능
+- 관리자용 API 엔드포인트 제공
+- 사용자 및 콘텐츠 상태 변경
+- 통계 데이터 조회
+```
+
+### 3. 💳 Payment Service
+**결제 및 프리미엄 구독 관리**
+- **정기 구독 결제**: Portone(아임포트) 연동을 통한 프리미엄 서비스 정기 결제
+- **상태 관리**: 사용자의 구독 상태(활성, 비활성, 해지) 실시간 관리
+- **자동화**: 스케줄러를 통한 월간 자동 결제 및 만료 처리
+- **웹훅 연동**: Portone 웹훅을 통한 결제 상태 동기화
+
+```yaml
+# 주요 기능
+- Portone API 연동 (빌링키 발급, 정기결제)
+- Spring Scheduler를 이용한 자동 결제
+- 웹훅 수신 및 처리
+```
+
+## 🔐 핵심 기술적 도전과제
+
+### 1. Portone 정기 결제 플로우
+**문제점**: 사용자의 최초 결제와 2회차 이후의 자동 결제를 안정적으로 처리하고 상태를 동기화해야 함.
+**해결방안**: `결제 준비` -> `최초 결제(빌링키 발급)` -> `웹훅 수신` -> `자동 결제 스케줄링`으로 이어지는 상태 관리 플로우 구축
+
+```java
+// PaymentService.java - processWebhook
+// 1. 웹훅으로 받은 imp_uid, merchant_uid, status 검증
+// 2. 결제 상태(PAID, CANCELLED)에 따라 DB 업데이트
+// 3. 성공 시, User Service에 Feign Client로 알려 프리미엄 상태 변경
+paymentMapper.updatePaymentStatus(payment);
+if ("PAID".equals(status)) {
+    userServiceClient.updateUserToPremium(payment.getUserId(), customerUid);
+}
+```
+
+### 2. 스케줄러를 이용한 자동 결제
+**문제점**: 매월 구독 만료일이 다가오는 사용자를 대상으로 정확한 시점에 자동 결제를 실행해야 함.
+**해결방안**: Spring Scheduler(`@Scheduled`)를 사용하여 매일 특정 시각에 만료 예정인 사용자를 조회하고, Portone API를 통해 자동 결제 요청
+
+```java
+// PaymentScheduler.java
+@Scheduled(cron = "0 0 2 * * *") // 매일 새벽 2시에 실행
+public void processScheduledPayments() {
+    // 1. 24시간 내에 구독 만료 예정인 활성 사용자 목록 조회
+    List<User> users = paymentMapper.findUsersWithExpiringSubscriptions();
+    // 2. 각 사용자에 대해 Portone 자동 결제 API 호출
+    for (User user : users) {
+        paymentService.processAutoPayment(user);
+    }
+}
+```
+
+## 🛠️ 기술 스택
+
+**Core Framework**
+- Java 17 + Spring Boot 3.4.6
+- Spring Cloud 2024.0.1
+- MyBatis, MySQL
+
+**External APIs & Libraries**
+- **Portone (아임포트)**: 결제 API 연동
+- **Spring Security + JWT**: 사용자 인증/인가
+- **Feign Client**: 마이크로서비스 간 통신
+- **Lombok**: Boilerplate 코드 제거
+
+**DevOps & Cloud**
+- Docker Containerization
+- AWS EKS (Kubernetes)
+- Jenkins CI/CD Pipeline
+
+## 🚀 배포 및 실행
+
+### 로컬 개발 환경
+
+**실행 순서 (중요!)**
+1. **Config Server, Eureka Server** 실행 (from `infra-platform`)
+2. **User, Admin, Payment Service** 실행
+   ```bash
+   # 각 서비스 디렉토리로 이동하여 아래 명령어 실행
+   # 예: user-service
+   cd user-service
+   ./mvnw spring-boot:run
+   ```
+3. **모든 비즈니스 서비스** 실행
+4. **API Gateway** 실행 (from `infra-platform`)
+
+### AWS 클라우드 배포
+
+**CI/CD 파이프라인**
+1. **개발자**: GitHub에 코드 푸시
+2. **Jenkins**: 자동 빌드 트리거 (`Jenkinsfile_user-admin-repo.groovy`)
+3. **Docker**: 이미지 빌드 및 ECR 푸시
+4. **EKS**: 쿠버네티스 자동 배포
+
+```groovy
+// Jenkinsfile_user-admin-repo.groovy (예시)
+pipeline {
+    agent any
+    stages {
+        stage('Build & Push User Service') {
+            steps {
+                dir('user-service') {
+                    sh 'docker build -t $ECR_REGISTRY/user-service:latest .'
+                    sh 'docker push $ECR_REGISTRY/user-service:latest'
+                }
+            }
+        }
+        // ... Admin, Payment 서비스도 동일하게 진행
+        stage('Deploy to EKS') {
+            steps {
+                sh 'kubectl apply -f k8s/'
+            }
+        }
+    }
+}
+```
+
+## 📊 모니터링 및 관리
+
+### 서비스 상태 확인
+- **Eureka Dashboard**: `http://localhost:8761`
+- **Service Health Check**:
+  - `http://localhost:8081/actuator/health` (User Service)
+  - `http://localhost:8082/actuator/health` (Admin Service)
+  - `http://localhost:8086/actuator/health` (Payment Service)
+
+### 주요 포트 정보
+| 서비스 | 포트 | 설명 |
+|---|---|---|
+| User Service | 8081 | 사용자 인증 및 정보 관리 |
+| Admin Service | 8082 | 관리자 기능 및 운영 |
+| Payment Service | 8086 | 결제 및 구독 관리 |
+
+## 🔧 주요 설정 파일
+
+### application.properties (User Service)
+```properties
+# application.properties
+spring.application.name=user-service
+server.port=8081
+
+# JWT Secret Key
+jwt.secret= ...
+
+# Google OAuth2 Client
+spring.security.oauth2.client.registration.google.client-id= ...
+spring.security.oauth2.client.registration.google.client-secret= ...
+```
+
+### application.properties (Payment Service)
+```properties
+# application.properties
+spring.application.name=payment-service
+server.port=8086
+
+# Portone API Keys
+portone.api-key= ...
+portone.api-secret= ...
+
+# Jackson Timezone Setting
+spring.jackson.time-zone=UTC
+```
+
+## 📁 프로젝트 Repository 구조
+
+### 🏗️ **Infrastructure & Core Services**
+| Repository | 포함 서비스 | 담당자 |
+|---|---|---|
+| **config** | 설정 관리 | 팀장 이설영 |
+| **infra-platform** | config-server, eureka-server, api-gateway | 팀장 이설영 |
+
+### 💼 **Business Services**
+| Repository | 포함 서비스 | 담당자 |
+|---|---|---|
+| **user-admin-repo** | user-service, admin-service, payment-service | 박나혜, 장준환 |
+| **chat-service** | chat-service, notification | 이설영 |
+| **qc-home-repo** | quest-service, com-service | 권민정 |
+| **feed-mypage-repo** | feed-service, mypage-service | 남승현 |
 
 ---
 
-## Payment Service
-
-### 주요 기능
-
--   **프리미엄 구독:** 사용자는 Portone 결제 모듈을 통해 프리미엄 서비스를 구독하고 정기 결제를 위한 빌링키를 발급받을 수 있습니다.
--   **구독 상태 관리:** 사용자의 프리미엄 구독 상태를 조회하고 관리합니다.
--   **구독 해지:** 사용자는 언제든지 프리미엄 구독을 해지할 수 있으며, 해지 시 빌링키가 삭제됩니다.
--   **결제 내역 조회:** 사용자는 자신의 전체 결제 내역을 조회할 수 있습니다.
--   **자동 결제 스케줄링:** 매월 정해진 시각에 만료 예정인 프리미엄 구독에 대해 자동 결제를 시도합니다.
--   **웹훅 연동:** Portone(아임포트) 웹훅을 통해 결제 및 환불 상태의 변경을 실시간으로 시스템에 반영합니다.
-
-### 🔗 API Endpoints
-
-| Method | URL                                          | Role   | 설명                                       |
-| :----- | :------------------------------------------- | :----- | :----------------------------------------- |
-| `POST` | `/api/payment/premium/subscribe`             | USER   | 프리미엄 구독 시작 (첫 결제 및 빌링키 발급) |
-| `POST` | `/api/payment/premium/change-payment-method` | USER   | 정기 결제 카드 변경                        |
-| `GET`  | `/api/payment/premium/status`                | USER   | 구독 상태 조회                             |
-| `DELETE`| `/api/payment/premium/cancel`               | USER   | 구독 해지 (빌링키 삭제)                    |
-| `GET`  | `/api/payment/history`                       | USER   | 내 결제 내역 조회                          |
-| `GET`  | `/api/payment/{paymentId}`                   | USER   | 결제 상세 조회                             |
-| `POST` | `/api/payment/webhook/iamport`               | SYSTEM | Iamport 웹훅 (결제 결과 수신)              |
-| `POST` | `/api/payment/internal/auto-payment`         | SYSTEM | 자동 결제 실행                             |
-
-### 데이터베이스 스키마
-
-#### `payment`
-
-결제 정보를 저장하는 테이블입니다.
-
-| Column             | Type                                               | Description                        |
-| :----------------- | :------------------------------------------------- | :--------------------------------- |
-| `id`               | INT (PK, AI)                                       | 결제 고유 ID                       |
-| `user_id`          | VARCHAR(255) (FK: user.user_id)                    | 결제한 사용자 ID                   |
-| `imp_uid`          | VARCHAR(100) (UNIQUE)                              | Iamport 결제 고유 ID               |
-| `merchant_uid`     | VARCHAR(100) (UNIQUE)                              | 주문 고유 ID (내부 트래킹용)       |
-| `amount`           | INT                                                | 결제 금액                          |
-| `pay_status`       | ENUM('PAID', 'CANCELLED', 'READY', 'CARD_UPDATED') | 결제 상태 ('READY'가 기본값)       |
-| `paid_at`          | TIMESTAMP                                          | 결제 시각                          |
-| `cancelled_at`     | TIMESTAMP                                          | 환불 처리 시각                     |
-| `pay_method`       | VARCHAR(50)                                        | 결제 방법                          |
-| `card_name`        | VARCHAR(50)                                        | 카드사                             |
-| `card_number_masked`| VARCHAR(50)                                        | 마스킹된 카드 번호                 |
-
-#### `premium_log`
-
-프리미엄 구독 이력을 관리하는 테이블입니다.
-
-| Column      | Type                  | Description                        |
-| :---------- | :-------------------- | :--------------------------------- |
-| `id`        | INT (PK, AI)          | 프리미엄 이력 고유 ID              |
-| `user_id`   | VARCHAR(20) (FK: user.user_id) | 프리미엄 구독자 ID                 |
-| `start_date`| TIMESTAMP             | 프리미엄 시작 시각                 |
-| `end_date`  | TIMESTAMP             | 프리미엄 종료 시각 (해지 또는 만료) |
-| `is_active` | BOOLEAN               | 현재 프리미엄 유지 여부            |
-
-### 프론트엔드 구조 (`msa-front/src/pages/payment`)
-
--   **`Payment.jsx`**: Portone(아임포트) 결제 모듈을 렌더링하고 사용자의 결제를 처리하는 메인 페이지입니다.
--   **`PaymentSuccess.jsx`**: 결제가 성공적으로 완료되었을 때 리디렉션되는 페이지입니다. 결제 결과를 서버에 최종 확인하고 사용자에게 성공 메시지를 보여줍니다.
--   **`PaymentFail.jsx`**: 결제가 실패하거나 사용자가 취소했을 때 리디렉션되는 페이지입니다.
--   **`SubscriptionStatus.jsx`**: 사용자의 현재 프리미엄 구독 상태와 결제 내역을 보여주는 페이지입니다.
-
-## 실행 방법
-
-1.  **Config Server 실행:** 설정 정보를 가져오기 위해 Config Server를 먼저 실행해야 합니다.
-2.  **Eureka Server 실행:** 서비스 디스커버리를 위해 Eureka Server를 실행합니다.
-3.  **각 서비스 실행:** `user-service`, `admin-service`, `payment-service`를 각각 실행합니다.
-    ```bash
-    # 각 서비스 디렉토리로 이동하여 아래 명령어 실행
-    ./mvnw spring-boot:run
-    ```
-4.  **프론트엔드 실행:** `msa-front` 디렉토리에서 아래 명령어를 실행합니다.
-    ```bash
-    npm install
-    npm run dev
-    ```
-5.  **API Gateway 실행:** 라우팅을 위해 API Gateway를 실행합니다.
+**⚡ 빠른 시작 가이드**
+```bash
+# 1. 인프라 서비스 실행 (config, eureka)
+# 2. user-admin-repo의 서비스들 실행
+cd user-service && ./mvnw spring-boot:run &
+cd ../admin-service && ./mvnw spring-boot:run &
+cd ../payment-service && ./mvnw spring-boot:run &
+```
