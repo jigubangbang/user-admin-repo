@@ -92,8 +92,15 @@ public class InquiryController {
             @RequestPart("dto") @Valid CreateInquiryDto dto,
             @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
 
+        List<CreateInquiryDto.AttachmentInfo> allAttachments = new ArrayList<>();
+        
+        // 1. 프론트에서 보낸 유지할 기존 파일들 추가
+        if (dto.getKeepExistingFiles() != null) {
+            allAttachments.addAll(dto.getKeepExistingFiles());
+        }
+        
+        // 2. 새 파일들을 추가
         if (files != null && !files.isEmpty()) {
-            List<CreateInquiryDto.AttachmentInfo> attachmentInfos = new ArrayList<>();
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
                     String s3Url = s3Service.uploadFile(file, "inquiry-attachments/");
@@ -101,17 +108,20 @@ public class InquiryController {
                     CreateInquiryDto.AttachmentInfo info = new CreateInquiryDto.AttachmentInfo();
                     info.setOriginalName(file.getOriginalFilename());
                     info.setUrl(s3Url);
-                    attachmentInfos.add(info);
+                    allAttachments.add(info);
 
-                    System.out.println("수정 시 등록된 파일: " + file.getOriginalFilename());
+                    System.out.println("수정 시 추가된 파일: " + file.getOriginalFilename());
                     System.out.println("S3 업로드 완료: " + s3Url);
                 }
             }
-
-            dto.setAttachments(attachmentInfos);
-            if (!attachmentInfos.isEmpty()) {
-                dto.setAttachment(convertToJsonString(attachmentInfos));
-            }
+        }
+        
+        // 3. 전체 파일 정보 설정
+        dto.setAttachments(allAttachments);
+        if (!allAttachments.isEmpty()) {
+            dto.setAttachment(convertToJsonString(allAttachments));
+        } else {
+            dto.setAttachment(null); // 파일이 없으면 null
         }
 
         inquiryService.updateInquiry(id, user.getUsername(), dto);
