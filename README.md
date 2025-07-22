@@ -45,16 +45,20 @@
 
 ### 💳 Payment Service
 **결제 및 프리미엄 구독 관리**
-- **정기 구독 결제**: Portone(아임포트) 연동을 통한 프리미엄 서비스 정기 결제
+- **정기 구독 결제**: Portone(Iamport) 연동을 통한 프리미엄 서비스 정기 결제
 - **상태 관리**: 사용자의 구독 상태(활성, 비활성, 해지) 실시간 관리
 - **자동화**: 스케줄러를 통한 월간 자동 결제 및 만료 처리
 - **웹훅 연동**: Portone 웹훅을 통한 결제 상태 동기화
 
 ```yaml
 # 주요 기능
-- Portone API 연동 (빌링키 발급, 정기결제)
-- Spring Scheduler를 이용한 자동 결제
-- 웹훅 수신 및 처리
+- Portone API 연동 (빌링키 발급, 정기결제, 환불)
+- Spring Scheduler를 이용한 자동 결제 및 만료 처리
+- 웹훅 수신 및 처리 (결제 상태 동기화)
+- 결제 수단 변경 
+- 구독 상태 관리
+- 결제 내역 조회 및 환불 처리
+- 프리미엄 구독 상세 정보 제공
 ```
 
 
@@ -185,7 +189,19 @@
 
 ### 3. Payment Service API
 
-(필요시 Payment Service API도 추가하세요)
+#### PaymentController (`/payment`)
+
+| HTTP 메서드 | 경로                          | 설명                    | 인증 필요 여부 | 요청 DTO                       | 응답 DTO                    |
+|-------------|-------------------------------|-------------------------|----------------|--------------------------------|-----------------------------|
+| POST        | /payment/premium/subscribe    | 프리미엄 구독 신청       | O              | -                              | Map<String, Object>         |
+| POST        | /payment/premium/change-method| 결제 수단 변경          | O              | PaymentMethodChangeRequestDto  | 200 OK                      |
+| GET         | /payment/premium/status       | 프리미엄 구독 상태 조회  | O              | -                              | PremiumStatusResponseDto    |
+| GET         | /payment/premium/details      | 프리미엄 구독 상세 정보  | O              | -                              | Map<String, Object>         |
+| DELETE      | /payment/premium/cancel       | 프리미엄 구독 해지       | O              | -                              | 200 OK                      |
+| GET         | /payment/history              | 결제 내역 조회           | O              | -                              | List<PaymentHistoryDto>     |
+| POST        | /payment/refund/request       | 환불 요청                | O              | RefundRequestDto               | Map<String, String>         |
+| POST        | /payment/webhook/iamport      | Portone 웹훅 수신        | X              | PortoneWebhookPayload          | 200 OK                      |
+| POST        | /payment/internal/auto-payment| 수동 자동결제 실행       | X (내부통신)   | -                              | String                      |
 
 
 ## 💡 주요 구현 사항
@@ -256,8 +272,8 @@ public ResponseEntity<?> socialLogin(
 
 ### 2. Amdin Service
 #### 콘텐츠 블라인드 처리 및 사용자 알림 전송
-**문제점** 부적절한 게시글, 댓글, 그룹 콘텐츠에 대한 효율적인 관리 및 사용자 경고 전달이 필요함.<br>
-**해결방안** 관리자가 콘텐츠를 블라인드 처리할 경우, 해당 유저의 블라인드 카운트를 증가시키고 알림 서비스(FeignClient)를 통해 자동으로 알림 전송. 신고 승인 처리 시에도 동일한 로직 자동 적용.
+**문제점**: 부적절한 게시글, 댓글, 그룹 콘텐츠에 대한 효율적인 관리 및 사용자 경고 전달이 필요함.<br>
+**해결방안**: 관리자가 콘텐츠를 블라인드 처리할 경우, 해당 유저의 블라인드 카운트를 증가시키고 알림 서비스(FeignClient)를 통해 자동으로 알림 전송. 신고 승인 처리 시에도 동일한 로직 자동 적용.
 
 ```java
 // AdminReportService.java
@@ -272,8 +288,8 @@ notificationServiceClient.createBlindNotification(notification);
 ```
 
 #### 문의 답변 등록 및 알림 전송
-**문제점** 사용자의 문의에 대한 답변이 등록되었을 때 이를 실시간으로 사용자에게 전달할 방법이 없음.<br>
-**해결방안** 관리자가 답변 등록 시, 알림 서비스(FeignClient)를 통해 자동으로 알림 전송. 첨부파일이 JSON 문자열로 저장된 경우에도 파싱 처리하여 상세 조회 시 제공.
+**문제점**: 사용자의 문의에 대한 답변이 등록되었을 때 이를 실시간으로 사용자에게 전달할 방법이 없음.<br>
+**해결방안**: 관리자가 답변 등록 시, 알림 서비스(FeignClient)를 통해 자동으로 알림 전송. 첨부파일이 JSON 문자열로 저장된 경우에도 파싱 처리하여 상세 조회 시 제공.
 
 ```java
 // AdminInquiryService.java
@@ -297,7 +313,7 @@ public void replyToInquiry(int inquiryId, String adminId, String reply) {
 ### 3.Payment Service
 #### Portone 정기 결제 플로우
 **문제점**: 사용자의 최초 결제와 2회차 이후의 자동 결제를 안정적으로 처리하고 상태를 동기화해야 함.<br>
-**해결방안**: `결제 준비` -> `최초 결제(빌링키 발급)` -> `웹훅 수신` -> `자동 결제 스케줄링`으로 이어지는 상태 관리 플로우 구축
+**해결방안**: `결제 준비` -> `최초 결제(빌링키 발급)` -> `웹훅 수신` -> `자동 결제 스케줄링`으로 이어지는 상태 관리 플로우 구축.
 
 ```java
 // PaymentService.java - processWebhook
@@ -312,18 +328,66 @@ if ("PAID".equals(status)) {
 
 #### 스케줄러를 이용한 자동 결제
 **문제점**: 매월 구독 만료일이 다가오는 사용자를 대상으로 정확한 시점에 자동 결제를 실행해야 함.<br>
-**해결방안**: Spring Scheduler(`@Scheduled`)를 사용하여 매일 특정 시각에 만료 예정인 사용자를 조회하고, Portone API를 통해 자동 결제 요청
+**해결방안**: Spring Scheduler(`@Scheduled`)를 사용하여 매일 특정 시각에 만료 예정인 사용자를 조회하고, Portone API를 통해 자동 결제 요청.
 
 ```java
-// PaymentScheduler.java
-@Scheduled(cron = "0 0 2 * * *") // 매일 새벽 2시에 실행
+// PaymentService.java
+@Scheduled(cron = "0 0 2 * * *") 
 public void processScheduledPayments() {
-    // 1. 24시간 내에 구독 만료 예정인 활성 사용자 목록 조회
-    List<User> users = paymentMapper.findUsersWithExpiringSubscriptions();
-    // 2. 각 사용자에 대해 Portone 자동 결제 API 호출
-    for (User user : users) {
-        paymentService.processAutoPayment(user);
+    log.info("===== 자동 결제 스케줄러 실행 시작 =====");
+    LocalDateTime tomorrow = LocalDateTime.now().plusDays(1);
+    List<PremiumHistoryDto> targets = premiumHistoryMapper.findExpiringSubscriptions(tomorrow);
+    if (targets.isEmpty()) {
+        log.info("자동 결제 대상이 없습니다.");
+        return;
     }
+    for (PremiumHistoryDto subscription : targets) {
+        try {
+            processAutoPaymentForUser(subscription.getUserId());
+        } catch (Exception e) {
+            log.error("사용자 [{}] 자동 결제 실패", subscription.getUserId(), e);
+        }
+    }
+    log.info("===== 자동 결제 스케줄러 실행 종료 =====");
+}
+```
+
+#### 결제 수단 변경
+**문제점**: 사용자가 카드 정보를 변경하고 싶을 때, 기존 빌링키를 안전하게 새로운 카드로 교체해야 함.<br>
+**해결방안**: 100원 소액 결제를 통해 카드 유효성을 검증하고 새로운 빌링키를 발급받은 후, 즉시 환불 처리하여 실제 비용 부담 없이 카드 변경 가능.
+
+```java
+// PaymentService.java
+public void changePaymentMethod(String userId, String impUid) {
+    // 1. 100원 결제 정보 검증
+    PortonePaymentResponse.PaymentInfo paymentInfo = portoneClient.getPaymentInfo(impUid, accessToken);
+    
+    // 2. 새로운 빌링키 추출 및 사용자 정보 업데이트
+    String newCustomerUid = paymentInfo.getCustomerUid();
+    userServiceClient.updateUserPremiumStatus(userId, userUpdateRequest);
+    
+    // 3. 즉시 환불 처리
+    portoneClient.requestRefund(refundPayload, accessToken);
+}
+```
+
+#### 환불 및 구독 해지 처리
+***문제점***: 사용자가 구독을 해지하거나 환불을 요청할 때, 결제 시스템과 구독 상태를 동기화해야 함.<br>
+***해결방안***: Portone 환불 API 호출과 동시에 프리미엄 구독 상태, 빌링키, 결제 내역을 일괄 업데이트하여 데이터 일관성 보장.
+
+```java
+// PaymentService.java
+@Transactional
+public void requestRefund(String userId, String merchantUid) {
+    // 1. Portone 환불 API 호출
+    portoneClient.requestRefund(refundPayload, accessToken);
+    
+    // 2. 결제 상태를 CANCELLED로 변경
+    paymentToRefund.setPayStatus("CANCELLED");
+    paymentHistoryMapper.updatePaymentStatus(paymentToRefund);
+    
+    // 3. 프리미엄 구독 비활성화 및 빌링키 제거
+    userServiceClient.updateUserPremiumStatus(userId, userUpdateRequest);
 }
 ```
 ---
@@ -338,7 +402,7 @@ public void processScheduledPayments() {
 
 **External APIs & Libraries**
 - **Spring Security + JWT**: 사용자 인증/인가
-- **Portone (아임포트)**: 결제 API 연동
+- **Portone (Iamport)**: 결제 API 연동
 - **Feign Client**: 마이크로서비스 간 통신
 - **Lombok**: Boilerplate 코드 제거
 
@@ -422,27 +486,27 @@ spring.application.name=user-service
 server.port=8081
 
 # JWT Secret Key
-jwt.secret= ...
-jwt.access-token-validity= ...
-jwt.refresh-token-validity= ...
+jwt.secret=${JWT_SECRET:your-jwt-secret-key-here}
+jwt.access-token-validity=${JWT_ACCESS_VALIDITY:10800000}
+jwt.refresh-token-validity=${JWT_REFRESH_VALIDITY:86400000}
 
 # OAuth2 Client
-oauth.kakao.client-id= ...
-oauth.kakao.redirect-uri=http://localhost:5173/oauth/kakao/callback
+oauth.kakao.client-id=${KAKAO_CLIENT_ID:your-kakao-client-id}
+oauth.kakao.redirect-uri=${KAKAO_REDIRECT_URI:http://localhost:5173/oauth/kakao/callback}
 
-oauth.naver.client-id= ...
-oauth.naver.client-secret= ...
-oauth.naver.redirect-uri=http://localhost:5173/oauth/naver/callback
+oauth.naver.client-id=${NAVER_CLIENT_ID:your-naver-client-id}
+oauth.naver.client-secret=${NAVER_CLIENT_SECRET:your-naver-client-secret}
+oauth.naver.redirect-uri=${NAVER_REDIRECT_URI:http://localhost:5173/oauth/naver/callback}
 
-oauth.google.client-id= ...
-oauth.google.client-secret= ...
-oauth.google.redirect-uri=http://localhost:5173/oauth/google/callback
+oauth.google.client-id=${GOOGLE_CLIENT_ID:your-google-client-id}
+oauth.google.client-secret=${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+oauth.google.redirect-uri=${GOOGLE_REDIRECT_URI:http://localhost:5173/oauth/google/callback}
 
 # Gmail SMTP 
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username= ...
-spring.mail.password= ...
+spring.mail.username=${GMAIL_USERNAME:your-gmail@gmail.com}
+spring.mail.password=${GMAIL_PASSWORD:your-app-password}
 spring.mail.protocol=smtp
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
@@ -465,9 +529,14 @@ spring.application.name=payment-service
 server.port=8086
 
 # Portone API Keys
-portone.api-key= ...
-portone.api-secret= ...
+portone.api-key=${PORTONE_API_KEY:your-portone-api-key}
+portone.api-secret=${PORTONE_API_SECRET:your-portone-api-secret}
+portone.webhook-url=${PORTONE_WEBHOOK_URL:http://localhost:8086/payment/webhook/iamport}
 
-# Jackson Timezone Setting
+# Jackson Timezone
 spring.jackson.time-zone=UTC
+
+# pring Scheduler
+spring.task.scheduling.pool.size=5
+spring.task.scheduling.thread-name-prefix=payment-scheduler-
 ```
