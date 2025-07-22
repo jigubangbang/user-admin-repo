@@ -27,15 +27,20 @@
 
 ### 2. 🛠️ Admin Service
 **관리자 기능 및 시스템 운영**
-- **관리자 대시보드**: 전체 사용자, 결제, 콘텐츠 현황 모니터링
-- **사용자 관리**: 사용자 제재(활동 정지), 권한 변경 등
-- **콘텐츠 관리**: 부적절한 게시물 및 댓글 숨김(블라인드) 처리
+- **관리자 대시보드**: 전체 사용자, 결제, 콘텐츠 현황 모니터링 및 통계 데이터 제공
+- **사용자 관리**: 사용자 활동 상태 변경, 회원 탈퇴 이력 관리
+- **콘텐츠 관리**: 게시글, 댓글, 그룹 등 부적절한 콘텐츠 블라인드(숨김) 처리 및 해제
+- **신고 관리**: 사용자 신고 내역 조회, 신고 승인 및 기각 처리
+- **1:1 문의 관리**: 사용자 문의 내역 조회, 답변 등록 및 알림 전송
 
 ```yaml
 # 주요 기능
-- 관리자용 API 엔드포인트 제공
-- 사용자 및 콘텐츠 상태 변경
-- 통계 데이터 조회
+- 관리자용 REST API 제공
+- 사용자 상태 변경 및 권한 조정
+- 게시글, 댓글, 그룹 등 블라인드 처리 및 해제
+- 신고 내역 관리 (승인/기각/철회)
+- 문의 답변 작성 및 알림 발송
+- 통계 및 대시보드 데이터 제공
 ```
 
 ### 3. 💳 Payment Service
@@ -101,6 +106,28 @@
 |-------------|---------------------|------------------------|----------------|--------------------|----------------------|
 | POST        | /user/reports       | 신고 등록               | O              | CreateReportDto    | String                |
 
+### AdminController (/admin)
+
+| HTTP 메서드 | 경로                        | 설명                      | 인증 필요 여부 | 요청 DTO                | 응답 DTO             |
+|-------------|-----------------------------|---------------------------|----------------|-------------------------|----------------------|
+| GET         | /admin/users                | 사용자 목록 조회           | O (관리자 권한) | -                       | List<AdminUserDto>    |
+| PUT         | /admin/users/{userId}/status| 사용자 상태 변경 (정지 등) | O (관리자 권한) | ChangeStatusDto          | String               |
+| GET         | /admin/posts                | 게시글 목록 조회           | O (관리자 권한) | 필터 파라미터             | List<AdminPostDto>    |
+| PUT         | /admin/posts/{postId}/blind | 게시글 블라인드 처리       | O (관리자 권한) | -                       | String               |
+| PUT         | /admin/posts/{postId}/unblind| 게시글 블라인드 해제       | O (관리자 권한) | -                       | String               |
+| GET         | /admin/comments             | 댓글 목록 조회             | O (관리자 권한) | 필터 파라미터             | List<AdminCommentDto> |
+| PUT         | /admin/comments/{commentId}/blind | 댓글 블라인드 처리    | O (관리자 권한) | -                       | String               |
+| PUT         | /admin/comments/{commentId}/unblind | 댓글 블라인드 해제    | O (관리자 권한) | -                       | String               |
+| GET         | /admin/groups               | 그룹 목록 조회             | O (관리자 권한) | 필터 파라미터             | List<AdminGroupDto>   |
+| PUT         | /admin/groups/{groupId}/blind | 그룹 블라인드 처리       | O (관리자 권한) | -                       | String               |
+| PUT         | /admin/groups/{groupId}/unblind | 그룹 블라인드 해제       | O (관리자 권한) | -                       | String               |
+| GET         | /admin/reports              | 신고 목록 조회             | O (관리자 권한) | -                       | List<AdminReportDto>  |
+| POST        | /admin/reports/{reportId}/blind | 신고 승인 및 블라인드 처리 | O (관리자 권한) | -                       | String               |
+| POST        | /admin/reports/{reportId}/keep  | 신고 기각 처리           | O (관리자 권한) | -                       | String               |
+| POST        | /admin/reports/{reportId}/cancel | 신고 승인 철회          | O (관리자 권한) | -                       | String               |
+| GET         | /admin/inquiries            | 1:1 문의 목록 조회         | O (관리자 권한) | -                       | List<AdminInquiryDto> |
+| GET         | /admin/inquiries/{id}       | 문의 상세 조회             | O (관리자 권한) | -                       | AdminInquiryDto       |
+| PUT         | /admin/inquiries/{id}/reply | 문의 답변 등록             | O (관리자 권한) | 답변 내용 DTO             | String               |
 
 ## 💡 주요 구현 사항
 
