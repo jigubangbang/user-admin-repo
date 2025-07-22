@@ -101,6 +101,14 @@
 
 ---
 
+#### ReportController (`/user/reports`)
+
+| HTTP 메서드 | 경로                | 설명                   | 인증 필요 여부 | 요청 DTO           | 응답 DTO             |
+|-------------|---------------------|------------------------|----------------|--------------------|----------------------|
+| POST        | /user/reports       | 신고 등록               | O              | CreateReportDto    | String                |
+
+---
+
 #### InquiryController (`/user/inquiry`)
 
 | HTTP 메서드 | 경로                | 설명                   | 인증 필요 여부 | 요청 DTO           | 응답 DTO             |
@@ -113,38 +121,65 @@
 
 ---
 
-#### ReportController (`/user/reports`)
+### 2. Admin Service API
 
-| HTTP 메서드 | 경로                | 설명                   | 인증 필요 여부 | 요청 DTO           | 응답 DTO             |
-|-------------|---------------------|------------------------|----------------|--------------------|----------------------|
-| POST        | /user/reports       | 신고 등록               | O              | CreateReportDto    | String                |
+#### AdminUserController (`/admin/users`)
+
+| HTTP 메서드 | 경로                    | 설명                   | 인증 필요 여부   | 요청 DTO         | 응답 DTO          |
+|-------------|-------------------------|------------------------|------------------|------------------|-------------------|
+| GET         | /admin/users            | 사용자 목록 조회        | O (관리자 권한)  | -                | List<AdminUserDto>|
+| PUT         | /admin/users/{userId}/status | 사용자 상태 변경 (정지 등) | O (관리자 권한)  | ChangeStatusDto  | String            |
 
 ---
 
-### 2. Admin Service API
+#### AdminPostController (`/admin/posts`)
 
-#### AdminController (`/admin`)
+| HTTP 메서드 | 경로                         | 설명                   | 인증 필요 여부   | 요청 DTO | 응답 DTO          |
+|-------------|------------------------------|------------------------|------------------|----------|-------------------|
+| GET         | /admin/posts                 | 게시글 목록 조회        | O (관리자 권한)  | 필터 파라미터 | List<AdminPostDto>|
+| PUT         | /admin/posts/{postId}/blind   | 게시글 블라인드 처리    | O (관리자 권한)  | -        | String            |
+| PUT         | /admin/posts/{postId}/unblind | 게시글 블라인드 해제    | O (관리자 권한)  | -        | String            |
 
-| HTTP 메서드 | 경로                            | 설명                      | 인증 필요 여부   | 요청 DTO           | 응답 DTO             |
-|-------------|---------------------------------|---------------------------|------------------|--------------------|----------------------|
-| GET         | /admin/users                    | 사용자 목록 조회           | O (관리자 권한)  | -                  | List<AdminUserDto>    |
-| PUT         | /admin/users/{userId}/status    | 사용자 상태 변경 (정지 등) | O (관리자 권한)  | ChangeStatusDto    | String               |
-| GET         | /admin/posts                    | 게시글 목록 조회           | O (관리자 권한)  | 필터 파라미터       | List<AdminPostDto>    |
-| PUT         | /admin/posts/{postId}/blind     | 게시글 블라인드 처리       | O (관리자 권한)  | -                  | String               |
-| PUT         | /admin/posts/{postId}/unblind   | 게시글 블라인드 해제       | O (관리자 권한)  | -                  | String               |
-| GET         | /admin/comments                 | 댓글 목록 조회             | O (관리자 권한)  | 필터 파라미터       | List<AdminCommentDto> |
-| PUT         | /admin/comments/{commentId}/blind   | 댓글 블라인드 처리    | O (관리자 권한)  | -                  | String               |
-| PUT         | /admin/comments/{commentId}/unblind | 댓글 블라인드 해제    | O (관리자 권한)  | -                  | String               |
-| GET         | /admin/groups                   | 그룹 목록 조회             | O (관리자 권한)  | 필터 파라미터       | List<AdminGroupDto>   |
-| PUT         | /admin/groups/{groupId}/blind   | 그룹 블라인드 처리         | O (관리자 권한)  | -                  | String               |
-| PUT         | /admin/groups/{groupId}/unblind | 그룹 블라인드 해제         | O (관리자 권한)  | -                  | String               |
-| GET         | /admin/reports                  | 신고 목록 조회             | O (관리자 권한)  | -                  | List<AdminReportDto>  |
-| POST        | /admin/reports/{reportId}/blind | 신고 승인 및 블라인드 처리 | O (관리자 권한)  | -                  | String               |
-| POST        | /admin/reports/{reportId}/keep  | 신고 기각 처리             | O (관리자 권한)  | -                  | String               |
-| POST        | /admin/reports/{reportId}/cancel| 신고 승인 철회            | O (관리자 권한)  | -                  | String               |
-| GET         | /admin/inquiries                | 1:1 문의 목록 조회         | O (관리자 권한)  | -                  | List<AdminInquiryDto> |
-| GET         | /admin/inquiries/{id}           | 문의 상세 조회             | O (관리자 권한)  | -                  | AdminInquiryDto       |
-| PUT         | /admin/inquiries/{id}/reply     | 문의 답변 등록             | O (관리자 권한)  | 답변 내용 DTO       | String               |
+---
+
+#### AdminCommentController (`/admin/comments`)
+
+| HTTP 메서드 | 경로                            | 설명                   | 인증 필요 여부   | 요청 DTO | 응답 DTO            |
+|-------------|---------------------------------|------------------------|------------------|----------|---------------------|
+| GET         | /admin/comments                | 댓글 목록 조회          | O (관리자 권한)  | 필터 파라미터 | List<AdminCommentDto>|
+| PUT         | /admin/comments/{commentId}/blind   | 댓글 블라인드 처리    | O (관리자 권한)  | -        | String              |
+| PUT         | /admin/comments/{commentId}/unblind | 댓글 블라인드 해제    | O (관리자 권한)  | -        | String              |
+
+---
+
+#### AdminGroupController (`/admin/groups`)
+
+| HTTP 메서드 | 경로                          | 설명                   | 인증 필요 여부   | 요청 DTO | 응답 DTO        |
+|-------------|-------------------------------|------------------------|------------------|----------|-----------------|
+| GET         | /admin/groups                 | 그룹 목록 조회          | O (관리자 권한)  | 필터 파라미터 | List<AdminGroupDto>|
+| PUT         | /admin/groups/{groupId}/blind   | 그룹 블라인드 처리    | O (관리자 권한)  | -        | String          |
+| PUT         | /admin/groups/{groupId}/unblind | 그룹 블라인드 해제    | O (관리자 권한)  | -        | String          |
+
+---
+
+#### AdminReportController (`/admin/reports`)
+
+| HTTP 메서드 | 경로                            | 설명                    | 인증 필요 여부   | 요청 DTO | 응답 DTO          |
+|-------------|---------------------------------|-------------------------|------------------|----------|-------------------|
+| GET         | /admin/reports                 | 신고 목록 조회           | O (관리자 권한)  | -        | List<AdminReportDto>|
+| POST        | /admin/reports/{reportId}/blind | 신고 승인 및 블라인드 처리 | O (관리자 권한)  | -        | String            |
+| POST        | /admin/reports/{reportId}/keep  | 신고 기각 처리           | O (관리자 권한)  | -        | String            |
+| POST        | /admin/reports/{reportId}/cancel| 신고 승인 철회           | O (관리자 권한)  | -        | String            |
+
+---
+
+#### AdminInquiryController (`/admin/inquiries`)
+
+| HTTP 메서드 | 경로                      | 설명                   | 인증 필요 여부   | 요청 DTO            | 응답 DTO          |
+|-------------|---------------------------|------------------------|------------------|---------------------|-------------------|
+| GET         | /admin/inquiries           | 1:1 문의 목록 조회      | O (관리자 권한)  | -                   | List<AdminInquiryDto>|
+| GET         | /admin/inquiries/{id}      | 문의 상세 조회          | O (관리자 권한)  | -                   | AdminInquiryDto    |
+| PUT         | /admin/inquiries/{id}/reply| 문의 답변 등록          | O (관리자 권한)  | AdminReplyRequestDto | String            |
 
 ---
 
