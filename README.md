@@ -54,8 +54,8 @@
 ## 🔐 핵심 기술적 도전과제
 
 ### 1. Spring Security 기반 JWT 인증 및 인가
-**문제점**: 마이크로서비스 환경에서 사용자 인증 및 권한 부여를 효율적이고 안전하게 처리해야 함.
-**해결방안**: Spring Security와 JWT(JSON Web Token)를 활용하여 Stateless한 인증 시스템 구축. API Gateway에서 1차 인증/인가를 수행하고, User Service에서 상세 권한 검증 및 토큰 발급/갱신을 담당.
+**문제점**: 마이크로서비스 환경에서 분산된 사용자 인증 및 권한 부여를 효율적이고 안전하게 처리해야 함.
+**해결방안**: Spring Security와 JWT(JSON Web Token)를 활용하여 Stateless한 인증 시스템 구축. API Gateway에서 1차 인증·인가를 수행하고, User Service에서 세부 권한 검증과 토큰 발급·갱신을 담당.
 
 ```java
 // SecurityConfig.java
@@ -74,8 +74,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 ```
 
 ### 2. Refresh Token을 이용한 Access Token 갱신
-**문제점**: Access Token의 짧은 유효 기간으로 인한 잦은 재로그인 필요성과 보안 취약점.
-**해결방안**: Refresh Token을 도입하여 Access Token 만료 시 사용자 재로그인 없이 새로운 Access Token을 발급. Refresh Token은 긴 유효 기간을 가지며, 탈취 시 재사용 방지 및 강제 만료 처리 로직 구현.
+**문제점**: Access Token의 짧은 유효 시간으로 인한 잦은 재로그인과 보안 취약점 존재.
+**해결방안**: 긴 유효 시간의 Refresh Token을 도입하여 Access Token 만료 시 사용자 재로그인 없이 토큰 갱신 가능. Refresh Token 탈취 방지를 위해 재사용 제한 및 강제 만료 처리 로직 구현.
 
 ```java
 // AuthService.java - refreshAccessToken method
@@ -96,9 +96,10 @@ public LoginResponseDto refreshAccessToken(String tokenHeader) {
 
 ### 3. 소셜 로그인 (OAuth2) 연동
 **문제점**: 다양한 소셜 플랫폼(Google, Naver, Kakao)을 통한 간편 로그인 기능을 제공해야 함.
-**해결방안**: Spring Security OAuth2 Client를 활용하여 각 소셜 플랫폼의 인증 흐름을 통합하고, 사용자 정보를 서비스에 맞게 매핑하여 JWT 토큰 발급.
+**해결방안**: Spring Security OAuth2 Client를 활용하여 각 소셜 플랫폼의 인증 흐름을 통합 및 사용자 정보를 서비스에 맞게 매핑, JWT 토큰 발급으로 일관된 인증 서비스 제공.
 
 ```java
+// AuthController.java
 @PostMapping("/{provider}")
 public ResponseEntity<?> socialLogin(
         @PathVariable String provider,
@@ -154,8 +155,8 @@ public void processScheduledPayments() {
 - MyBatis, MySQL
 
 **External APIs & Libraries**
-- **Portone (아임포트)**: 결제 API 연동
 - **Spring Security + JWT**: 사용자 인증/인가
+- **Portone (아임포트)**: 결제 API 연동
 - **Feign Client**: 마이크로서비스 간 통신
 - **Lombok**: Boilerplate 코드 제거
 
@@ -237,10 +238,32 @@ server.port=8081
 
 # JWT Secret Key
 jwt.secret= ...
+jwt.access-token-validity= ...
+jwt.refresh-token-validity= ...
 
-# Google OAuth2 Client
-spring.security.oauth2.client.registration.google.client-id= ...
-spring.security.oauth2.client.registration.google.client-secret= ...
+# OAuth2 Client
+oauth.kakao.client-id= ...
+oauth.kakao.redirect-uri=http://localhost:5173/oauth/kakao/callback
+
+oauth.naver.client-id= ...
+oauth.naver.client-secret= ...
+oauth.naver.redirect-uri=http://localhost:5173/oauth/naver/callback
+
+oauth.google.client-id= ...
+oauth.google.client-secret= ...
+oauth.google.redirect-uri=http://localhost:5173/oauth/google/callback
+
+# Gmail SMTP 
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username= ...
+spring.mail.password= ...
+spring.mail.protocol=smtp
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
 ```
 
 ### application.properties (Payment Service)
