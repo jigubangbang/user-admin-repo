@@ -9,16 +9,19 @@
 
 ### 1. 👤 User Service
 **사용자 도메인 총괄**
-- **인증/인가**: JWT 기반 회원가입, 로그인, 소셜 로그인(Google, Naver, Kakao) 처리
-- **프로필 관리**: 사용자 프로필 정보, 프로필 이미지, 여행 스타일 등 관리
-- **상호작용**: 다른 사용자 팔로우/언팔로우, 사용자 검색 기능
+- **인증/인가**: JWT 기반 회원가입, 로그인, 소셜 로그인(Google, Naver, Kakao)
+- **회원 정보 관리**: 회원 정보 수정(이름, 닉네임, 전화번호), 비밀번호 변경, 이메일 변경(인증코드 검증)
+- **계정 상태 관리**: 정지/탈퇴 처리 및 복구, 회원 탈퇴 이력 기록
+- **이메일 서비스 연동**: 인증코드 발송 및 확인, 임시 비밀번호 전송
 
 ```yaml
 # 주요 기능
-- JWT 토큰 생성 및 검증
-- OAuth2 소셜 로그인 연동
-- 사용자 정보 CRUD
-- Feign Client를 통한 타 서비스와의 통신
+- 회원가입, 로그인 (JWT 기반), 소셜 로그인(Google, Naver, Kakao)
+- Access Token 갱신 (Refresh Token 검증)
+- 사용자 정보 조회 및 수정
+- 비밀번호/이메일 변경 (이메일 인증 포함)
+- 회원 탈퇴 처리 및 이력 저장
+- 타 서비스와의 Feign 연동
 ```
 
 ### 2. 🛠️ Admin Service
@@ -63,7 +66,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/auth/**",  "/public/**", "/", "/health-check", "/actuator/**", "/user/internal/**").permitAll()
-            .anyRequest().authenticated()
+            .anyRequest().authenticated()  
         )
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
@@ -83,8 +86,11 @@ public LoginResponseDto refreshAccessToken(String tokenHeader) {
     }
     String userId = jwtTokenProvider.getUserIdFromToken(token);
     UserDto user = userMapper.findUserById(userId);
+    if (user == null) {
+        throw new IllegalArgumentException("사용자 정보를 찾을 수 없습니다.");
+    }
     String newAccessToken = jwtTokenProvider.generateAccessToken(user);
-    return LoginResponseDto.of(newAccessToken, token, user);
+    return LoginResponseDto.of(newAccessToken, token, user); 
 }
 ```
 
@@ -93,13 +99,18 @@ public LoginResponseDto refreshAccessToken(String tokenHeader) {
 **해결방안**: Spring Security OAuth2 Client를 활용하여 각 소셜 플랫폼의 인증 흐름을 통합하고, 사용자 정보를 서비스에 맞게 매핑하여 JWT 토큰 발급.
 
 ```java
-// AuthController.java - socialLogin method
 @PostMapping("/{provider}")
 public ResponseEntity<?> socialLogin(
         @PathVariable String provider,
         @RequestBody SocialRequestDto request) {
-    LoginResponseDto response = authService.socialLogin(request.getCode(), provider);
-    return ResponseEntity.ok(response);
+    try {
+        LoginResponseDto response = authService.socialLogin(request.getCode(), provider);
+        return ResponseEntity.ok(response);
+    } catch (UserStatusException e) {
+        return ResponseEntity.status(401).body(Map.of("message", e.getMessage()));
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(401).body(Map.of("message", e.getMessage()));
+    }
 }
 ```
 
