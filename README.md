@@ -5,7 +5,8 @@
 
 이 레포지토리는 **Jigubangbang✈** 프로젝트의 핵심 비즈니스 로직인 사용자, 관리자, 결제 도메인을 담당하는 마이크로서비스들을 관리합니다.
 
-## 🎯 서비스 구성
+
+## 🎯 서비스 개요
 
 ### 1. 👤 User Service
 **사용자 도메인 총괄**
@@ -51,7 +52,57 @@
 - 웹훅 수신 및 처리
 ```
 
-## 🔐 핵심 기술적 도전과제
+
+## 🌐 API 엔드포인트
+
+### REST API
+
+### AuthController (/auth)
+| HTTP 메서드 | 경로                 | 설명                  | 인증 필요 여부 | 요청 DTO            | 응답 DTO            |
+|-------------|----------------------|-----------------------|----------------|---------------------|---------------------|
+| POST        | /auth/login          | 로그인                | X              | LoginRequestDto     | LoginResponseDto     |
+| POST        | /auth/register       | 회원가입              | X              | RegisterRequestDto  | String              |
+| GET         | /auth/check-id/{id}  | 아이디 중복 확인      | X              | -                   | Boolean             |
+| GET         | /auth/check-email/{email} | 이메일 중복 확인   | X              | -                   | Boolean             |
+| POST        | /auth/email/send     | 인증코드 이메일 발송  | X              | EmailDto            | String              |
+| POST        | /auth/email/verify   | 인증코드 검증         | X              | EmailDto            | String              |
+| POST        | /auth/{provider}     | 소셜 로그인           | X              | SocialRequestDto    | LoginResponseDto     |
+| POST        | /auth/refresh-token  | AccessToken 재발급    | X              | Header(RefreshToken) | LoginResponseDto    |
+| POST        | /auth/find-id        | 아이디 찾기           | X              | FindIdRequestDto    | ResponseEntity       |
+| POST        | /auth/find-password  | 비밀번호 찾기         | X              | FindPwdRequestDto   | ResponseEntity       |
+
+### UserController (/user)
+| HTTP 메서드 | 경로                   | 설명                   | 인증 필요 여부 | 요청 DTO           | 응답 DTO             |
+|-------------|------------------------|------------------------|----------------|--------------------|----------------------|
+| GET         | /user/me               | 내 정보 조회           | O              | -                  | UserDto               |
+| PUT         | /user/me               | 내 정보 수정           | O              | UpdateUserDto      | String                |
+| PUT         | /user/password         | 비밀번호 변경          | O              | ChangePwdDto       | String                |
+| POST        | /user/email/change-request | 이메일 변경 요청     | O              | String (email)     | String                |
+| PUT         | /user/email/change-confirm | 이메일 변경 확인     | O              | ChangeEmailDto     | String                |
+| DELETE      | /user/me               | 회원 탈퇴              | O              | WithdrawalRequestDto | 204 No Content      |
+
+### UserResponseController (/user/internal)
+| HTTP 메서드 | 경로                          | 설명                    | 인증 필요 여부 | 요청 DTO                 | 응답 DTO             |
+|-------------|-------------------------------|-------------------------|----------------|--------------------------|----------------------|
+| GET         | /user/internal/{userId}       | 내부 서비스 사용자 정보 조회 | X (내부통신)      | -                        | UserResponseDto       |
+| PUT         | /user/internal/premium/{userId} | 내부 서비스 프리미엄 상태 변경 | X (내부통신)     | UserPremiumUpdateRequestDto | 200 OK          |
+
+### InquiryController (/user/inquiry)
+| HTTP 메서드 | 경로                | 설명                   | 인증 필요 여부 | 요청 DTO           | 응답 DTO             |
+|-------------|---------------------|------------------------|----------------|--------------------|----------------------|
+| POST        | /user/inquiry       | 1:1 문의 생성 (멀티파트) | O              | CreateInquiryDto   | Map<String, Integer>  |
+| GET         | /user/inquiry       | 내 문의 리스트 조회     | O              | -                  | List<InquiryDto>      |
+| GET         | /user/inquiry/{id}  | 문의 상세 조회          | O              | -                  | InquiryDto            |
+| PUT         | /user/inquiry/{id}  | 문의 수정 (멀티파트)    | O              | CreateInquiryDto   | String                |
+| DELETE      | /user/inquiry/{id}  | 문의 삭제               | O              | -                  | 204 No Content        |
+
+### ReportController (/user/reports)
+| HTTP 메서드 | 경로                | 설명                   | 인증 필요 여부 | 요청 DTO           | 응답 DTO             |
+|-------------|---------------------|------------------------|----------------|--------------------|----------------------|
+| POST        | /user/reports       | 신고 등록               | O              | CreateReportDto    | String                |
+
+
+## 💡 주요 구현 사항
 
 ### 1. Spring Security 기반 JWT 인증 및 인가
 **문제점**: 마이크로서비스 환경에서 분산된 사용자 인증 및 권한 부여를 효율적이고 안전하게 처리해야 함.
@@ -147,6 +198,7 @@ public void processScheduledPayments() {
 }
 ```
 
+
 ## 🛠️ 기술 스택
 
 **Core Framework**
@@ -164,6 +216,7 @@ public void processScheduledPayments() {
 - Docker Containerization
 - AWS EKS (Kubernetes)
 - Jenkins CI/CD Pipeline
+
 
 ## 🚀 배포 및 실행
 
@@ -212,6 +265,7 @@ pipeline {
 }
 ```
 
+
 ## 📊 모니터링 및 관리
 
 ### 서비스 상태 확인
@@ -228,7 +282,8 @@ pipeline {
 | Admin Service | 8082 | 관리자 기능 및 운영 |
 | Payment Service | 8086 | 결제 및 구독 관리 |
 
-## 🔧 주요 설정 파일
+
+## 🔧 주요 설정 정보
 
 ### application.properties (User Service)
 ```properties
