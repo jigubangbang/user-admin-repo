@@ -196,7 +196,6 @@
 | POST        | /payment/premium/subscribe    | 프리미엄 구독 신청       | O              | -                              | Map<String, Object>         |
 | POST        | /payment/premium/change-method| 결제 수단 변경          | O              | PaymentMethodChangeRequestDto  | 200 OK                      |
 | GET         | /payment/premium/status       | 프리미엄 구독 상태 조회  | O              | -                              | PremiumStatusResponseDto    |
-| GET         | /payment/premium/details      | 프리미엄 구독 상세 정보  | O              | -                              | Map<String, Object>         |
 | DELETE      | /payment/premium/cancel       | 프리미엄 구독 해지       | O              | -                              | 200 OK                      |
 | GET         | /payment/history              | 결제 내역 조회           | O              | -                              | List<PaymentHistoryDto>     |
 | POST        | /payment/refund/request       | 환불 요청                | O              | RefundRequestDto               | Map<String, String>         |
@@ -270,7 +269,7 @@ public ResponseEntity<?> socialLogin(
 ```
 ---
 
-### 2. Amdin Service
+### 2. Admin Service
 #### 콘텐츠 블라인드 처리 및 사용자 알림 전송
 **문제점**: 부적절한 게시글, 댓글, 그룹 콘텐츠에 대한 효율적인 관리 및 사용자 경고 전달이 필요함.<br>
 **해결방안**: 관리자가 콘텐츠를 블라인드 처리할 경우, 해당 유저의 블라인드 카운트를 증가시키고 알림 서비스(FeignClient)를 통해 자동으로 알림 전송. 신고 승인 처리 시에도 동일한 로직 자동 적용.
@@ -536,7 +535,7 @@ portone.webhook-url=${PORTONE_WEBHOOK_URL:http://localhost:8086/payment/webhook/
 # Jackson Timezone
 spring.jackson.time-zone=UTC
 
-# pring Scheduler
+# Spring Scheduler
 spring.task.scheduling.pool.size=5
 spring.task.scheduling.thread-name-prefix=payment-scheduler-
 ```
