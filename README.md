@@ -84,8 +84,8 @@
 ### UserResponseController (/user/internal)
 | HTTP 메서드 | 경로                          | 설명                    | 인증 필요 여부 | 요청 DTO                 | 응답 DTO             |
 |-------------|-------------------------------|-------------------------|----------------|--------------------------|----------------------|
-| GET         | /user/internal/{userId}       | 내부 서비스 사용자 정보 조회 | X (내부통신)      | -                        | UserResponseDto       |
-| PUT         | /user/internal/premium/{userId} | 내부 서비스 프리미엄 상태 변경 | X (내부통신)     | UserPremiumUpdateRequestDto | 200 OK          |
+| GET         | /user/internal/{userId}       | 내부 서비스 사용자 정보 조회 | X (내부통신) | -                        | UserResponseDto       |
+| PUT         | /user/internal/premium/{userId} | 내부 서비스 프리미엄 상태 변경 | X (내부통신) | UserPremiumUpdateRequestDto | 200 OK          |
 
 ### InquiryController (/user/inquiry)
 | HTTP 메서드 | 경로                | 설명                   | 인증 필요 여부 | 요청 DTO           | 응답 DTO             |
